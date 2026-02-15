@@ -1,463 +1,422 @@
-// משתנים גלובליים
-let shuttleData = null;
-let currentView = "home";
-let currentRoute = null;
+// ═══════════════════════════════════════════
+// RAMAT DAVID SHUTTLE — APP
+// ═══════════════════════════════════════════
 
-// טעינת נתונים
-async function loadData() {
-  try {
-    const response = await fetch("shuttle-data.json");
-    shuttleData = await response.json();
-    initApp();
-  } catch (error) {
-    console.error("שגיאה בטעינת נתונים:", error);
-  }
-}
-
-// אתחול האפליקציה
-function initApp() {
-  updateTime();
-  setInterval(updateTime, 1000);
-  renderRoutes();
-  renderUpcoming();
-  renderStops();
-  setupSearch();
-  setupDestinationPlanner();
-}
-
-// עדכון תצוגת שעה
-function updateTime() {
-  const now = new Date();
-  const timeStr = now.toLocaleTimeString("he-IL", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-  const dateStr = now.toLocaleDateString("he-IL", {
-    weekday: "long",
-    day: "numeric",
-    month: "short",
-  });
-  const timeEl = document.getElementById("currentTime");
-  const dateEl = document.getElementById("currentDate");
-  if (timeEl) timeEl.textContent = timeStr;
-  if (dateEl) dateEl.textContent = dateStr;
-}
-
-// רינדור כרטיסי קווים
-function renderRoutes() {
-  const grid = document.getElementById("routesGrid");
-  grid.innerHTML = shuttleData.routes
-    .map(
-      (route) => `
-    <div class="route-card" data-route="${route.id}" onclick="showRouteDetail('${route.id}')">
-      <div class="route-number">${route.name}</div>
-      <div class="route-name">${route.description || ""}</div>
-      <div class="route-days">${route.days}</div>
-    </div>
-  `,
-    )
-    .join("");
-}
-
-// קבלת שם תחנה לפי מזהה
-function getStopName(stopId) {
-  const stop = shuttleData.stops.find((s) => s.id === stopId);
-  return stop ? stop.name : stopId;
-}
-
-// המרת מחרוזת זמן לדקות
-function parseTime(timeStr) {
-  const match = timeStr.match(/^(\d{1,2}):(\d{2})/);
-  if (match) {
-    return parseInt(match[1]) * 60 + parseInt(match[2]);
-  }
-  return 0;
-}
-
-// קבלת הזמן הנוכחי בדקות
-function getCurrentMinutes() {
-  const now = new Date();
-  return now.getHours() * 60 + now.getMinutes();
-}
-
-// קבלת תג לסוג נסיעה
-function getTypeBadge(type) {
-  const badges = {
-    loop: { class: "badge-loop", text: "מעגל" },
-    full_loop: { class: "badge-loop", text: "מעגל מלא" },
-    maintenance_train: { class: "badge-train", text: "רכבת" },
-    maintenance: { class: "badge-train", text: "תחזוקה" },
-    maintenance_short: { class: "badge-train", text: "תחזוקה" },
-    pickup: { class: "badge-loop", text: "איסוף" },
-    train_reinforcement: { class: "badge-train", text: "תגבור" },
-    on_call: { class: "badge-oncall", text: "לפי קריאה" },
-    break: { class: "badge-break", text: "הפסקה" },
-    end: { class: "badge-break", text: "סיום" },
-  };
-  return badges[type] || { class: "badge-loop", text: type };
-}
-
-// רינדור נסיעות קרובות
-function renderUpcoming() {
-  const list = document.getElementById("upcomingList");
-  const currentMins = getCurrentMinutes();
-
-  let allTrips = [];
-  shuttleData.routes.forEach((route) => {
-    route.schedule.forEach((trip) => {
-      if (trip.type !== "break" && trip.type !== "end") {
-        const tripMins = parseTime(trip.time);
-        if (tripMins >= currentMins) {
-          allTrips.push({ ...trip, routeId: route.id, routeName: route.name });
-        }
-      }
-    });
-  });
-
-  allTrips.sort((a, b) => parseTime(a.time) - parseTime(b.time));
-  allTrips = allTrips.slice(0, 5);
-
-  document.getElementById("upcomingCount").textContent = allTrips.length;
-
-  if (allTrips.length === 0) {
-    list.innerHTML = `
-      <div class="empty-state">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="12" cy="12" r="10"></circle>
-          <polyline points="12 6 12 12 16 14"></polyline>
-        </svg>
-        <h3>אין נסיעות קרובות</h3>
-        <p>הנסיעות יתחדשו מחר בבוקר</p>
-      </div>
-    `;
-    return;
-  }
-
-  list.innerHTML = allTrips
-    .map((trip) => {
-      const badge = getTypeBadge(trip.type);
-      const stops = trip.stops
-        ? trip.stops.slice(0, 3).map(getStopName).join(" ← ") +
-          (trip.stops.length > 3 ? " ..." : "")
-        : trip.description || "";
-
-      return `
-      <div class="schedule-item fade-in" onclick="showRouteDetail('${trip.routeId}')">
-        <div class="schedule-time">${trip.time}</div>
-        <div class="schedule-content">
-          <div class="schedule-type">
-            ${trip.routeName}
-            <span class="schedule-type-badge ${badge.class}">${badge.text}</span>
-          </div>
-          <div class="schedule-stops">${stops}</div>
-        </div>
-        <span class="schedule-arrow">←</span>
-      </div>
-    `;
-    })
-    .join("");
-}
-
-// הצגת פרטי קו
-function showRouteDetail(routeId) {
-  const route = shuttleData.routes.find((r) => r.id === routeId);
-  if (!route) return;
-
-  currentRoute = route;
-  currentView = "route";
-
-  document.getElementById("homeView").classList.add("hidden");
-  document.getElementById("stopsView").classList.add("hidden");
-  document.getElementById("routeDetailView").classList.add("active");
-
-  const header = document.getElementById("routeDetailHeader");
-  header.dataset.route = route.id;
-  document.getElementById("routeDetailNumber").textContent = route.id;
-  document.getElementById("routeDetailName").textContent = route.name;
-  document.getElementById("routeDetailDays").textContent = route.days;
-
-  const noteEl = document.getElementById("routeDetailNote");
-  if (route.note) {
-    noteEl.style.display = "flex";
-    document.getElementById("routeDetailNoteText").textContent = route.note;
-  } else {
-    noteEl.style.display = "none";
-  }
-
-  renderRouteSchedule(route);
-  updateNavItems("home");
-}
-
-// רינדור לוח זמנים של קו
-function renderRouteSchedule(route) {
-  const list = document.getElementById("routeScheduleList");
-  const currentMins = getCurrentMinutes();
-
-  document.getElementById("scheduleCount").textContent = route.schedule.length;
-
-  list.innerHTML = route.schedule
-    .map((trip) => {
-      const badge = getTypeBadge(trip.type);
-      const isBreak = trip.type === "break" || trip.type === "end";
-      const isOnCall = trip.type === "on_call";
-      const tripMins = parseTime(trip.time);
-      const isActive =
-        !isBreak && tripMins >= currentMins && tripMins <= currentMins + 30;
-
-      let stops = "";
-      if (trip.stops) {
-        stops = trip.stops.map(getStopName).join(" ← ");
-      } else if (trip.description) {
-        stops = trip.description;
-      } else if (trip.squadron) {
-        stops = trip.squadron;
-      }
-
-      return `
-      <div class="schedule-item ${isBreak ? "break" : ""} ${isOnCall ? "oncall" : ""} ${isActive ? "active" : ""}">
-        <div class="schedule-time">${trip.time}</div>
-        <div class="schedule-content">
-          <div class="schedule-type">
-            <span class="schedule-type-badge ${badge.class}">${badge.text}</span>
-            ${trip.squadron ? `<span style="color: var(--text-muted); font-size: 12px;">${trip.squadron}</span>` : ""}
-          </div>
-          <div class="schedule-stops">${stops}</div>
-        </div>
-      </div>
-    `;
-    })
-    .join("");
-}
-
-// חזרה לדף הבית
-function showHome() {
-  currentView = "home";
-  currentRoute = null;
-  document.getElementById("homeView").classList.remove("hidden");
-  document.getElementById("routeDetailView").classList.remove("active");
-  document.getElementById("stopsView").classList.add("hidden");
-  updateNavItems("home");
-  renderUpcoming();
-}
-
-// רינדור רשימת תחנות
-function renderStops(filter = "") {
-  const grid = document.getElementById("stopsGrid");
-  let stops = shuttleData.stops;
-
-  if (filter) {
-    const f = filter.toLowerCase();
-    stops = stops.filter((s) => s.name.toLowerCase().includes(f));
-  }
-
-  document.getElementById("stopsCount").textContent = stops.length;
-
-  grid.innerHTML = stops
-    .map((stop) => {
-      // מציאת קווים שעוברים בתחנה
-      const routes = [];
-      shuttleData.routes.forEach((route) => {
-        route.schedule.forEach((trip) => {
-          if (
-            trip.stops &&
-            trip.stops.includes(stop.id) &&
-            !routes.includes(route.id)
-          ) {
-            routes.push(route.id);
-          }
-        });
-      });
-
-      return `
-      <div class="stop-item">
-        <div class="stop-marker ${stop.color || "green"}"></div>
-        <div class="stop-info">
-          <div class="stop-name">${stop.name}</div>
-          ${stop.note ? `<div class="stop-note">${stop.note}</div>` : ""}
-        </div>
-        <div class="stop-routes">
-          ${routes.map((r) => `<span class="stop-route-badge r${r}">${r}</span>`).join("")}
-        </div>
-      </div>
-    `;
-    })
-    .join("");
-}
-
-// החלפת טאבים
-function switchTab(tab) {
-  updateNavItems(tab);
-
-  if (tab === "home") {
-    showHome();
-  } else if (tab === "stops") {
-    currentView = "stops";
-    document.getElementById("homeView").classList.add("hidden");
-    document.getElementById("routeDetailView").classList.remove("active");
-    document.getElementById("stopsView").classList.remove("hidden");
-  } else if (tab === "info") {
-    alert("מוקד הסעות: 04-6092400\n\nשעות פעילות:\nראשון-חמישי 06:00-22:00");
-  }
-}
-
-// עדכון פריטי ניווט
-function updateNavItems(activeTab) {
-  document.querySelectorAll(".nav-item").forEach((item, index) => {
-    const tabs = ["home", "stops", "info"];
-    item.classList.toggle("active", tabs[index] === activeTab);
-  });
-}
-
-// הגדרת חיפוש
-function setupSearch() {
-  const homeSearch = document.getElementById("searchInput");
-  const stopsSearch = document.getElementById("stopsSearchInput");
-
-  homeSearch.addEventListener("input", (e) => {
-    const value = e.target.value;
-    if (value.length > 0) {
-      switchTab("stops");
-      stopsSearch.value = value;
-      renderStops(value);
+const DATA = {
+  "title": "תחנות הכנף",
+  "legend": {
+    "תחנת_שירות": "מחלקה שהיא עצמה תחנה (ירוק)",
+    "תחנה_חלופית": "מחלקה שנוסעת לתחנה מסוימת (צהוב)"
+  },
+  "units": [
+    {
+      "name": "כללי",
+      "departments": [
+        { "name": "רחבת היסעים", "type": "תחנת שירות" }
+      ]
+    },
+    {
+      "name": "טייסת 109",
+      "departments": [
+        { "name": "דת\"ק 13", "type": "תחנת שירות" },
+        { "name": "דת\"ק 16", "type": "תחנת שירות" },
+        { "name": "דת\"ק 12", "type": "תחנת שירות" },
+        { "name": "דת\"ק 15", "type": "תחנה חלופית", "goes_to": "גף טיסה 109" },
+        { "name": "דת\"ק 8", "type": "תחנת שירות" },
+        { "name": "גף טיסה", "type": "תחנת שירות" },
+        { "name": "גף טכני", "type": "תחנת שירות" }
+      ]
+    },
+    {
+      "name": "טייסת 160",
+      "station": "רחבת היסעים",
+      "departments": [
+        { "name": "גף טיסה", "type": "תחנת שירות" },
+        { "name": "גף טכני", "type": "תחנת שירות" },
+        { "name": "דת\"ק 2", "type": "תחנת שירות" }
+      ]
+    },
+    {
+      "name": "טייסת 105",
+      "departments": [
+        { "name": "דת\"ק 14", "type": "תחנה חלופית", "goes_to": "דת\"ק 34" },
+        { "name": "דת\"ק 9", "type": "תחנת שירות" },
+        { "name": "דת\"ק 7", "type": "תחנת שירות" },
+        { "name": "גף טיסה", "type": "תחנת שירות" },
+        { "name": "גף טכני", "type": "תחנת שירות" }
+      ]
+    },
+    {
+      "name": "טייסת 144",
+      "departments": [
+        { "name": "מפקדה", "type": "תחנה חלופית", "goes_to": "רחבת הסיעים" },
+        { "name": "דת\"ק 32", "type": "תחנת שירות" },
+        { "name": "בריטניה", "type": "תחנת שירות" }
+      ]
+    },
+    {
+      "name": "טייסת 101",
+      "station": "רחבת היסעים",
+      "departments": [
+        { "name": "דת\"ק 5", "type": "תחנת שירות" },
+        { "name": "דת\"ק 4", "type": "תחנת שירות" },
+        { "name": "דת\"ק 3", "type": "תחנת שירות" },
+        { "name": "גף טיסה", "type": "תחנת שירות" },
+        { "name": "גף טכני", "type": "תחנת שירות" }
+      ]
+    },
+    {
+      "name": "טייסת תעופה",
+      "station": "רחבת היסעים",
+      "departments": [
+        { "name": "דת\"ק 17", "type": "תחנת שירות" },
+        { "name": "מפקדה", "type": "תחנת שירות" },
+        { "name": "אבטחת מידע", "type": "תחנה חלופית", "goes_to": "רחבת היסעים" },
+        { "name": "אבטחה פיזית", "type": "תחנה חלופית", "goes_to": "רחבת היסעים" },
+        { "name": "כיבוי", "type": "תחנה חלופית", "goes_to": "רחבת היסעים" },
+        { "name": "רציפו\"ת תפקודית", "type": "תחנה חלופית", "goes_to": "רחבת היסעים" },
+        { "name": "מושל\"ם", "type": "תחנת שירות" }
+      ]
+    },
+    {
+      "name": "בינוי 302",
+      "station": "רחבת היסעים",
+      "departments": [
+        { "name": "מגדל", "type": "תחנת שירות" },
+        { "name": "מפקדה", "type": "תחנה חלופית", "goes_to": "רחבת היסעים" },
+        { "name": "מערכות חשמל", "type": "תחנה חלופית", "goes_to": "רחבת היסעים" },
+        { "name": "משאבים/רכב", "type": "תחנה חלופית", "goes_to": "רחבת היסעים" },
+        { "name": "מערכות מיזוג", "type": "תחנה חלופית", "goes_to": "רחבת היסעים" },
+        { "name": "מש\"ק", "type": "תחנה חלופית", "goes_to": "רחבת היסעים" },
+        { "name": "הנדסה", "type": "תחנה חלופית", "goes_to": "רחבת היסעים" },
+        { "name": "מערכות דס\"ל/דלק 21", "type": "תחנה חלופית", "goes_to": "רחבת היסעים" },
+        { "name": "שירותי קרקע", "type": "תחנת שירות" }
+      ]
+    },
+    {
+      "name": "לשכה",
+      "departments": [
+        { "name": "לשכת כנף 1", "type": "תחנת שירות" },
+        { "name": "בטיחות", "type": "תחנת שירות" },
+        { "name": "משרד סוציולוגית", "type": "תחנת שירות" }
+      ]
+    },
+    {
+      "name": "מנהלה",
+      "station": "רחבת היסעים",
+      "departments": [
+        { "name": "כח אדם חובה/סגל", "type": "תחנה חלופית", "goes_to": "רחבת היסעים" },
+        { "name": "לוגיסטיקה", "type": "תחנת שירות" },
+        { "name": "רבנות", "type": "תחנה חלופית", "goes_to": "רחבת היסעים" },
+        { "name": "רס\"ר", "type": "תחנה חלופית", "goes_to": "רחבת היסעים" },
+        { "name": "רפואה", "type": "תחנה חלופית", "goes_to": "רחבת היסעים" },
+        { "name": "פסיכולוגיה", "type": "תחנת שירות" },
+        { "name": "שפ\"ו", "type": "תחנה חלופית", "goes_to": "רחבת היסעים" },
+        { "name": "תזונה", "type": "תחנה חלופית", "goes_to": "רחבת היסעים" }
+      ]
+    },
+    {
+      "name": "טייסת תחזוקה",
+      "notes": "רכבות - איסוף מתחנת מערכות, חד\"א - מעבר בכלל התחנות",
+      "departments": [
+        { "name": "מרכז אחזקה", "type": "תחנת שירות" },
+        { "name": "מנועים", "type": "תחנה חלופית", "goes_to": "רכבות" },
+        { "name": "מערכות", "type": "תחנה חלופית", "goes_to": "רכבות" },
+        { "name": "מוסכים א/ב", "type": "תחנה חלופית", "goes_to": "רכבות" },
+        { "name": "אוהד", "type": "תחנה חלופית", "goes_to": "רכבות" },
+        { "name": "גל\"א", "type": "תחנה חלופית", "goes_to": "רכבות" },
+        { "name": "אוויוניקה", "type": "תחנה חלופית", "goes_to": "רכבות" },
+        { "name": "מבנה", "type": "תחנה חלופית", "goes_to": "רכבות" },
+        { "name": "תקשוב", "type": "תחנה חלופית", "goes_to": "רכבות" },
+        { "name": "חילוץ", "type": "תחנה חלופית", "goes_to": "רכבות" },
+        { "name": "נשמ\"ת", "type": "תחנת שירות" },
+        { "name": "מרכז בידונים", "type": "תחנת שירות" }
+      ]
     }
-  });
+  ],
+  "bus_routes": [
+    {
+      "name": "קו 1 - ראשון עד חמישי",
+      "phone": "04-6092400",
+      "schedule": [
+        { "time": "6:00-7:00", "type": "איסוף", "description": "איסוף ע\"פ קריאה מול מוצב מנהלה" },
+        { "time": "7:20", "type": "נסיעה", "stops": ["רחבת היסעים","קולנוע","דת\"ק 17","דת\"ק 2","מגדל","גף טיסה 105","גף טכני 105","מתחם בידונים","דת\"ק 34","דת\"ק 32","דת\"ק 9","בריטניה","רחבת היסעים"] },
+        { "time": "7:40", "type": "נסיעה", "stops": ["רחבת היסעים","קולנוע","דת\"ק 17","דת\"ק 2","מגדל","גף טיסה 105","גף טכני 105","מתחם בידונים","דת\"ק 34","דת\"ק 32","דת\"ק 9","בריטניה","רחבת היסעים"] },
+        { "time": "8:00", "type": "נסיעה", "stops": ["רחבת היסעים","צומת הנת דוד","ש\"ג קדמי"] },
+        { "time": "8:20", "type": "נסיעה", "stops": ["רחבת היסעים","מערכות (איסוף מרכז של תחנות תחזוקה - מפורט במקרא)","דת\"ק 13","דת\"ק 12","גף טכני 160","דת\"ק 7","דת\"ק 8","דלק 21","דת\"ק 16","נשמ\"ת","גף טכני 109","גף טיסה 109","רכבת כפר יהושע"] },
+        { "time": "8:40", "type": "נסיעה", "stops": ["רכבת כפר יהושע","גף טכני 109","גף טיסה 109","נשמ\"ת","דת\"ק 7","דת\"ק 8","דלק 21","גף טכני 160","דת\"ק 12","דת\"ק 13","דת\"ק 16","שירותי קרקע","גף אוהד","גל\"א","גף אוויוניקה","גף מבנה","מרכז אחזקה","מוסכים א/ב","מנועים","חילוץ","רחבת היסעים","קולנוע","דת\"ק 17","דת\"ק 2","גף טיסה 105","גף טכני 105","מתחם בידונים","מגדל","דת\"ק 34","דת\"ק 32","דת\"ק 9","בריטניה","רחבת היסעים"] },
+        { "time": "9:20-10:00", "type": "הפסקה" },
+        { "time": "10:00", "type": "נסיעה", "stops": ["רחבת היסעים","קולנוע","דת\"ק 17","דת\"ק 2","מגדל","גף טכני 105","גף טיסה 105","מתחם בידונים","דת\"ק 34","דת\"ק 32","דת\"ק 9","בריטניה","רחבת היסעים"] },
+        { "time": "10:30", "type": "נסיעה", "stops": ["רחבת היסעים","מערכות (איסוף מרכז של תחנות תחזוקה - מפורט במקרא)","דת\"ק 13","דת\"ק 12","גף טכני 160","דת\"ק 7","דת\"ק 8","דלק 21","דת\"ק 16","נשמ\"ת","גף טכני 109","גף טיסה 109"] },
+        { "time": "11:00", "type": "נסיעה", "stops": ["גף טיסה 109","גף טכני 109","נשמ\"ת","דת\"ק 8","דת\"ק 7","דלק 21","גף טכני 160","דת\"ק 12","דת\"ק 13","דת\"ק 16","חד\"א"] },
+        { "time": "11:20", "type": "נסיעה", "stops": ["גף טיסה 109","גף טכני 109","נשמ\"ת","דת\"ק 8","דת\"ק 7","דלק 21","גף טכני 160","דת\"ק 12","דת\"ק 13","דת\"ק 16","חד\"א"] },
+        { "time": "11:30-12:00", "type": "הפסקה" },
+        { "time": "12:05", "type": "נסיעה", "stops": ["חד\"א","גף מנועים","גף מערכות","שירותי קרקע","גף אוהד","גל\"א","גף אוויוניקה","גף מבנה","מרכז אחזקה","מוסכים א/ב","חילוץ","חד\"א"] },
+        { "time": "12:20", "type": "נסיעה", "stops": ["חד\"א","רחבת היסעים","דת\"ק 16","דת\"ק 13","דת\"ק 12","גף טכני 160","דלק 21","דת\"ק 7","דת\"ק 8","נשמ\"ת","גף טיסה 109","גף טכני 109","חד\"א"] },
+        { "time": "13:00", "type": "נסיעה", "stops": ["חד\"א","גף מנועים","גף מערכות","שירותי קרקע","גף אוהד","גל\"א","גף אוויוניקה","גף מבנה","מרכז אחזקה","מוסכים א/ב","חילוץ"] },
+        { "time": "13:30", "type": "נסיעה", "stops": ["חד\"א","רחבת היסעים","דת\"ק 16","דת\"ק 13","דת\"ק 12","גף טכני 160","דלק 21","דת\"ק 7","דת\"ק 8","נשמ\"ת","גף טיסה 109","גף טכני 109"] },
+        { "time": "13:45-14:30", "type": "הפסקה" },
+        { "time": "14:30", "type": "נסיעה", "stops": ["רחבת היסעים","מערכות (איסוף מרכז של תחנות תחזוקה - מפורט במקרא)","דת\"ק 13","דת\"ק 12","גף טכני 160","דת\"ק 7","דת\"ק 8","דלק 21","דת\"ק 16","נשמ\"ת","גף טכני 109","גף טיסה 109","רכבת כפר יהושע"] },
+        { "time": "14:45", "type": "נסיעה", "stops": ["רכבת כפר יהושע","גף טכני 109","גף טיסה 109","נשמ\"ת","דת\"ק 7","דת\"ק 8","דלק 21","גף טכני 160","דת\"ק 12","דת\"ק 13","דת\"ק 16","שירותי קרקע","גף אוהד","גל\"א","גף אוויוניקה","גף מבנה","מרכז אחזקה","מוסכים א/ב","מנועים","חילוץ","רחבת היסעים","קולנוע","דת\"ק 17","דת\"ק 2","גף טיסה 105","גף טכני 105","מתחם בידונים","מגדל","דת\"ק 34","דת\"ק 32","דת\"ק 9","בריטניה","רחבת היסעים"] },
+        { "time": "15:30", "type": "נסיעה", "stops": ["רחבת היסעים","מערכות (איסוף מרכז של תחנות תחזוקה - מפורט במקרא)","דת\"ק 13","דת\"ק 12","גף טכני 160","דת\"ק 7","דת\"ק 8","דלק 21","דת\"ק 16","נשמ\"ת","גף טכני 109","גף טיסה 109","רכבת כפר יהושע"] },
+        { "time": "16:10", "type": "נסיעה", "stops": ["רכבת כפר יהושע","גף טכני 109","גף טיסה 109","נשמ\"ת","דת\"ק 7","דת\"ק 8","דלק 21","גף טכני 160","דת\"ק 12","דת\"ק 13","דת\"ק 16","שירותי קרקע","גף אוהד","גל\"א","גף אוויוניקה","גף מבנה","מרכז אחזקה","מוסכים א/ב","מנועים","חילוץ","רחבת היסעים","קולנוע","דת\"ק 17","דת\"ק 2","גף טיסה 105","גף טכני 105","מתחם בידונים","מגדל","דת\"ק 34","דת\"ק 32","דת\"ק 9","בריטניה","רחבת היסעים"] },
+        { "time": "16:30", "type": "נסיעה", "stops": ["רחבת היסעים","מערכות (איסוף מרכז של תחנות תחזוקה - מפורט במקרא)","דת\"ק 13","דת\"ק 12","גף טכני 160","דת\"ק 7","דת\"ק 8","דלק 21","דת\"ק 16","נשמ\"ת","גף טכני 109","גף טיסה 109","רכבת כפר יהושע"] },
+        { "time": "17:10", "type": "נסיעה", "stops": ["רכבת כפר יהושע","גף טכני 109","גף טיסה 109","נשמ\"ת","דת\"ק 7","דת\"ק 8","דלק 21","גף טכני 160","דת\"ק 12","דת\"ק 13","דת\"ק 16","שירותי קרקע","גף אוהד","גל\"א","גף אוויוניקה","גף מבנה","מרכז אחזקה","מוסכים א/ב","מנועים","חילוץ","רחבת היסעים"] },
+        { "time": "18:00", "type": "סוף יום" }
+      ]
+    },
+    {
+      "name": "קו 2 - ראשון עד חמישי",
+      "phone": "04-6092400",
+      "schedule": [
+        { "time": "6:30-7:00", "type": "איסוף", "description": "איסוף ע\"פ קריאה מול מוצב מנהלה" },
+        { "time": "7:20", "type": "נסיעה", "stops": ["רחבת היסעים","מערכות (איסוף מרכז של תחנות תחזוקה - מפורט במקרא)","דת\"ק 13","דת\"ק 12","גף טכני 160","דת\"ק 7","דת\"ק 8","דלק 21","דת\"ק 16","נשמ\"ת","גף טכני 109","גף טיסה 109","רכבת כפר יהושע"] },
+        { "time": "7:40", "type": "נסיעה", "stops": ["רכבת כפר יהושע","גף טכני 109","גף טיסה 109","נשמ\"ת","דת\"ק 7","דת\"ק 8","דלק 21","גף טכני 160","דת\"ק 12","דת\"ק 13","דת\"ק 16","שירותי קרקע","גף אוהד","גל\"א","גף אוויוניקה","גף מבנה","מרכז אחזקה","מוסכים א/ב","מנועים","חילוץ","רחבת היסעים","קולנוע","דת\"ק 17","דת\"ק 2","גף טיסה 105","גף טכני 105","מתחם בידונים","מגדל","דת\"ק 34","דת\"ק 32","דת\"ק 9","בריטניה","רחבת היסעים"] },
+        { "time": "8:30", "type": "נסיעה", "stops": ["צומת רמת דוד","רחבת היסעים","קולנוע","דת\"ק 17","דת\"ק 2","מגדל","גף טיסה 105","גף טכני 105","מתחם בידונים","דת\"ק 34","דת\"ק 32","דת\"ק 9","בריטניה","רחבת היסעים","צומת רמת דוד"] },
+        { "time": "9:00", "type": "נסיעה", "stops": ["צומת רמת דוד","רחבת היסעים","מערכות (איסוף מרכז של תחנות תחזוקה - מפורט במקרא)","דת\"ק 16","דת\"ק 13","דת\"ק 12","גף טכני 160","דת\"ק 7","דת\"ק 8","דלק 21","גף טכני 109","גף טיסה 109","צומת רמת דוד"] },
+        { "time": "9:30", "type": "נסיעה", "stops": ["צומת רמת דוד","רחבת היסעים","קולנוע","דת\"ק 17","דת\"ק 2","מגדל","גף טיסה 105","גף טכני 105","מתחם בידונים","דת\"ק 34","דת\"ק 32","דת\"ק 9","בריטניה","רחבת היסעים","צומת רמת דוד"] },
+        { "time": "10:15", "type": "נסיעה", "stops": ["צומת רמת דוד","רחבת היסעים","קולנוע","דת\"ק 17","דת\"ק 2","מגדל","גף טיסה 105","גף טכני 105","מתחם בידונים","דת\"ק 34","דת\"ק 32","דת\"ק 9","בריטניה"] },
+        { "time": "10:30-11:00", "type": "הפסקה" },
+        { "time": "11:00", "type": "נסיעה", "stops": ["בריטניה","דת\"ק 9","דת\"ק 32","דת\"ק 34","מגדל","מתחם בידונים","דת\"ק 2","דת\"ק 17","חד\"א"] },
+        { "time": "11:20", "type": "נסיעה", "stops": ["חד\"א","גף מנועים","מתחם בידונים","שירותי קרקע","גף אוהד","גל\"א","גף אוויוניקה","גף מבנה","מרכז אחזקה","מוסכים א/ב","חילוץ","חד\"א"] },
+        { "time": "11:30-12:00", "type": "הפסקה" },
+        { "time": "12:10", "type": "נסיעה", "stops": ["חד\"א","רחבת היסעים","דת\"ק 17","דת\"ק 2","מתחם בידונים","גף טכני 105","גף טיסה 105","מגדל","דת\"ק 34","דת\"ק 32","דת\"ק 9","בריטניה"] },
+        { "time": "12:20", "type": "נסיעה", "stops": ["בריטניה","דת\"ק 9","דת\"ק 32","דת\"ק 34","מגדל","מתחם בידונים","דת\"ק 2","דת\"ק 17","חד\"א"] },
+        { "time": "12:30-13:15", "type": "הפסקה" },
+        { "time": "13:20", "type": "נסיעה", "stops": ["חד\"א","רחבת היסעים","דת\"ק 17","דת\"ק 2","מתחם בידונים","גף טכני 105","גף טיסה 105","מגדל","דת\"ק 34","דת\"ק 32","דת\"ק 9","בריטניה"] },
+        { "time": "14:10", "type": "נסיעה", "stops": ["רחבת היסעים","קולנוע","דת\"ק 17","דת\"ק 2","מגדל","גף טיסה 105","גף טכני 105","מתחם בידונים","דת\"ק 34","דת\"ק 32","דת\"ק 9","בריטניה","רחבת היסעים"] },
+        { "time": "14:40", "type": "נסיעה", "stops": ["רחבת היסעים","קולנוע","דת\"ק 17","דת\"ק 2","מגדל","גף טיסה 105","גף טכני 105","מתחם בידונים","דת\"ק 34","דת\"ק 32","דת\"ק 9","בריטניה","רחבת היסעים"] },
+        { "time": "15:10", "type": "נסיעה", "stops": ["רחבת היסעים","קולנוע","דת\"ק 17","דת\"ק 2","מגדל","גף טיסה 105","גף טכני 105","מתחם בידונים","דת\"ק 34","דת\"ק 32","דת\"ק 9","בריטניה","רחבת היסעים"] },
+        { "time": "15:40-16:10", "type": "הפסקה" }
+      ]
+    },
+    {
+      "name": "קו 3 - ראשון עד חמישי",
+      "phone": "04-6092400",
+      "schedule": [
+        { "time": "10:00", "type": "נסיעה", "stops": ["צומת רמת דוד","רחבת היסעים","מערכות (איסוף מרכז של תחנות תחזוקה - מפורט במקרא)","דת\"ק 16","דת\"ק 13","דת\"ק 12","גף טכני 160","דת\"ק 7","דת\"ק 8","דלק 21","נשמ\"ת","גף טכני 109","גף טיסה 109","צומת רמת דוד"] },
+        { "time": "10:30", "type": "נסיעה", "stops": ["צומת רמת דוד","רחבת היסעים","מערכות (איסוף מרכז של תחנות תחזוקה - מפורט במקרא)","דת\"ק 16","דת\"ק 13","דת\"ק 12","גף טכני 160","דת\"ק 7","דת\"ק 8","דלק 21","נשמ\"ת","גף טכני 109","גף טיסה 109","צומת רמת דוד"] },
+        { "time": "11:00", "type": "נסיעה", "stops": ["צומת רמת דוד","רחבת היסעים","מערכות (איסוף מרכז של תחנות תחזוקה - מפורט במקרא)","דת\"ק 16","דת\"ק 13","דת\"ק 12","גף טכני 160","דת\"ק 7","דת\"ק 8","דלק 21","נשמ\"ת","גף טכני 109","גף טיסה 109","צומת רמת דוד"] },
+        { "time": "11:30-12:00", "type": "הפסקה" },
+        { "time": "12:10", "type": "נסיעה", "stops": ["צומת רמת דוד","רחבת היסעים","מערכות (איסוף מרכז של תחנות תחזוקה - מפורט במקרא)","דת\"ק 16","דת\"ק 13","דת\"ק 12","גף טכני 160","דת\"ק 7","דת\"ק 8","דלק 21","נשמ\"ת","גף טכני 109","גף טיסה 109","צומת רמת דוד"] },
+        { "time": "12:40", "type": "נסיעה", "stops": ["צומת רמת דוד","רחבת היסעים","מערכות (איסוף מרכז של תחנות תחזוקה - מפורט במקרא)","דת\"ק 16","דת\"ק 13","דת\"ק 12","גף טכני 160","דת\"ק 7","דת\"ק 8","דלק 21","נשמ\"ת","גף טכני 109","גף טיסה 109","צומת רמת דוד"] },
+        { "time": "13:10", "type": "נסיעה", "stops": ["צומת רמת דוד","רחבת היסעים","מערכות (איסוף מרכז של תחנות תחזוקה - מפורט במקרא)","דת\"ק 16","דת\"ק 13","דת\"ק 12","גף טכני 160","דת\"ק 7","דת\"ק 8","דלק 21","נשמ\"ת","גף טכני 109","גף טיסה 109","צומת רמת דוד"] },
+        { "time": "13:40-14:00", "type": "הפסקה" },
+        { "time": "14:10", "type": "נסיעה", "stops": ["צומת רמת דוד","רחבת היסעים","מערכות (איסוף מרכז של תחנות תחזוקה - מפורט במקרא)","דת\"ק 16","דת\"ק 13","דת\"ק 12","גף טכני 160","דת\"ק 7","דת\"ק 8","דלק 21","נשמ\"ת","גף טכני 109","גף טיסה 109","צומת רמת דוד"] },
+        { "time": "14:40", "type": "נסיעה", "stops": ["צומת רמת דוד","רחבת היסעים","מערכות (איסוף מרכז של תחנות תחזוקה - מפורט במקרא)","דת\"ק 16","דת\"ק 13","דת\"ק 12","גף טכני 160","דת\"ק 7","דת\"ק 8","דלק 21","נשמ\"ת","גף טכני 109","גף טיסה 109","צומת רמת דוד"] },
+        { "time": "15:10", "type": "נסיעה", "stops": ["צומת רמת דוד","רחבת היסעים","מערכות (איסוף מרכז של תחנות תחזוקה - מפורט במקרא)","דת\"ק 16","דת\"ק 13","דת\"ק 12","גף טכני 160","דת\"ק 7","דת\"ק 8","דלק 21","נשמ\"ת","גף טכני 109","גף טיסה 109","צומת רמת דוד"] },
+        { "time": "15:40", "type": "נסיעה", "stops": ["צומת רמת דוד","רחבת היסעים","מערכות (איסוף מרכז של תחנות תחזוקה - מפורט במקרא)","דת\"ק 16","דת\"ק 13","דת\"ק 12","גף טכני 160","דת\"ק 7","דת\"ק 8","דלק 21","נשמ\"ת","גף טכני 109","גף טיסה 109","צומת רמת דוד"] },
+        { "time": "16:10", "type": "נסיעה", "stops": ["צומת רמת דוד","רחבת היסעים","מערכות (איסוף מרכז של תחנות תחזוקה - מפורט במקרא)","דת\"ק 16","דת\"ק 13","דת\"ק 12","גף טכני 160","דת\"ק 7","דת\"ק 8","דלק 21","נשמ\"ת","גף טכני 109","גף טיסה 109","צומת רמת דוד"] },
+        { "time": "16:40", "type": "נסיעה", "stops": ["צומת רמת דוד","רחבת היסעים","מערכות (איסוף מרכז של תחנות תחזוקה - מפורט במקרא)","דת\"ק 16","דת\"ק 13","דת\"ק 12","גף טכני 160","דת\"ק 7","דת\"ק 8","דלק 21","נשמ\"ת","גף טכני 109","גף טיסה 109","צומת רמת דוד"] },
+        { "time": "17:30-18:00", "type": "הפסקה" },
+        { "time": "18:00-20:40", "type": "איסוף", "description": "איסוף ע\"פ קריאה מול מוצב מנהלה" },
+        { "time": "20:40-21:00", "type": "הפסקה" },
+        { "time": "21:00-21:45", "type": "איסוף", "description": "איסוף ע\"פ קריאה מול מוצב מנהלה" },
+        { "time": "22:00", "type": "סוף יום" }
+      ]
+    },
+    {
+      "name": "קו 4 - תגבור רכבות ראשון וחמישי",
+      "schedule": [
+        { "time": "7:20", "type": "נסיעה", "stops": ["רחבת היסעים","מערכות (איסוף מרכז של תחנות תחזוקה - מפורט במקרא)","דת\"ק 16","דת\"ק 13","דת\"ק 12","גף טכני 160","דת\"ק 7","דת\"ק 8","דלק 21","נשמ\"ת","גף טכני 109","גף טיסה 109","רכבת כפר יהושע"] },
+        { "time": "7:40", "type": "נסיעה", "stops": ["רכבת כפר יהושע","גף טכני 109","גף טיסה 109","נשמ\"ת","דת\"ק 7","דת\"ק 8","דלק 21","גף טכני 160","דת\"ק 12","דת\"ק 13","דת\"ק 16","שירותי קרקע","גף אוהד","גל\"א","גף אוויוניקה","גף מבנה","מרכז אחזקה","מוסכים א/ב","מנועים","חילוץ","רחבת היסעים","קולנוע","דת\"ק 17","דת\"ק 2","גף טיסה 105","גף טכני 105","מתחם בידונים","מגדל","דת\"ק 34","דת\"ק 32","דת\"ק 9","בריטניה","רחבת היסעים"] },
+        { "time": "8:20", "type": "נסיעה", "stops": ["רחבת היסעים","מערכות (איסוף מרכז של תחנות תחזוקה - מפורט במקרא)","דת\"ק 16","דת\"ק 13","דת\"ק 12","גף טכני 160","דת\"ק 7","דת\"ק 8","דלק 21","נשמ\"ת","גף טכני 109","גף טיסה 109","רכבת כפר יהושע"] },
+        { "time": "8:40", "type": "נסיעה", "stops": ["רכבת כפר יהושע","גף טכני 109","גף טיסה 109","נשמ\"ת","דת\"ק 7","דת\"ק 8","דלק 21","גף טכני 160","דת\"ק 12","דת\"ק 13","דת\"ק 16","שירותי קרקע","גף אוהד","גל\"א","גף אוויוניקה","גף מבנה","מרכז אחזקה","מוסכים א/ב","מנועים","חילוץ","רחבת היסעים","קולנוע","דת\"ק 17","דת\"ק 2","גף טיסה 105","גף טכני 105","מתחם בידונים","מגדל","דת\"ק 34","דת\"ק 32","דת\"ק 9","בריטניה","רחבת היסעים"] },
+        { "time": "9:20", "type": "נסיעה", "stops": ["רחבת היסעים","מערכות (איסוף מרכז של תחנות תחזוקה - מפורט במקרא)","דת\"ק 16","דת\"ק 13","דת\"ק 12","גף טכני 160","דת\"ק 7","דת\"ק 8","דלק 21","נשמ\"ת","גף טכני 109","גף טיסה 109","רכבת כפר יהושע"] },
+        { "time": "9:40", "type": "נסיעה", "stops": ["רכבת כפר יהושע","גף טכני 109","גף טיסה 109","נשמ\"ת","דת\"ק 7","דת\"ק 8","דלק 21","גף טכני 160","דת\"ק 12","דת\"ק 13","דת\"ק 16","שירותי קרקע","גף אוהד","גל\"א","גף אוויוניקה","גף מבנה","מרכז אחזקה","מוסכים א/ב","מנועים","חילוץ","רחבת היסעים","קולנוע","דת\"ק 17","דת\"ק 2","גף טיסה 105","גף טכני 105","מתחם בידונים","מגדל","דת\"ק 34","דת\"ק 32","דת\"ק 9","בריטניה","רחבת היסעים"] },
+        { "time": "10:20", "type": "נסיעה", "stops": ["רחבת היסעים","מערכות (איסוף מרכז של תחנות תחזוקה - מפורט במקרא)","דת\"ק 16","דת\"ק 13","דת\"ק 12","גף טכני 160","דת\"ק 7","דת\"ק 8","דלק 21","נשמ\"ת","גף טכני 109","גף טיסה 109","רכבת כפר יהושע","נשמ\"ת"] },
+        { "time": "10:40", "type": "נסיעה", "stops": ["רכבת כפר יהושע","גף טכני 109","גף טיסה 109","נשמ\"ת","דת\"ק 7","דת\"ק 8","דלק 21","גף טכני 160","דת\"ק 12","דת\"ק 13","דת\"ק 16","שירותי קרקע","גף אוהד","גל\"א","גף אוויוניקה","גף מבנה","מרכז אחזקה","מוסכים א/ב","מנועים","חילוץ","רחבת היסעים","קולנוע","דת\"ק 17","דת\"ק 2","גף טיסה 105","גף טכני 105","מתחם בידונים","מגדל","דת\"ק 34","דת\"ק 32","דת\"ק 9","בריטניה","רחבת היסעים"] },
+        { "time": "11:30-12:30", "type": "הפסקה" },
+        { "time": "12:30", "type": "נסיעה", "stops": ["רחבת היסעים","מערכות (איסוף מרכז של תחנות תחזוקה - מפורט במקרא)","דת\"ק 16","דת\"ק 13","דת\"ק 12","גף טכני 160","דת\"ק 7","דת\"ק 8","דלק 21","נשמ\"ת","גף טכני 109","גף טיסה 109","רכבת כפר יהושע"] },
+        { "time": "13:00", "type": "נסיעה", "stops": ["רכבת כפר יהושע","גף טכני 109","גף טיסה 109","נשמ\"ת","דת\"ק 7","דת\"ק 8","דלק 21","גף טכני 160","דת\"ק 12","דת\"ק 13","דת\"ק 16","שירותי קרקע","גף אוהד","גל\"א","גף אוויוניקה","גף מבנה","מרכז אחזקה","מוסכים א/ב","מנועים","חילוץ","רחבת היסעים"] },
+        { "time": "13:35", "type": "נסיעה", "stops": ["רחבת היסעים","מערכות (איסוף מרכז של תחנות תחזוקה - מפורט במקרא)","דת\"ק 16","דת\"ק 13","דת\"ק 12","גף טכני 160","דת\"ק 7","דת\"ק 8","דלק 21","נשמ\"ת","גף טכני 109","גף טיסה 109","רכבת כפר יהושע"] },
+        { "time": "14:05", "type": "נסיעה", "stops": ["רכבת כפר יהושע","גף טכני 109","גף טיסה 109","נשמ\"ת","דת\"ק 7","דת\"ק 8","דלק 21","גף טכני 160","דת\"ק 12","דת\"ק 13","דת\"ק 16","שירותי קרקע","גף אוהד","גל\"א","גף אוויוניקה","גף מבנה","מרכז אחזקה","מוסכים א/ב","מנועים","חילוץ","רחבת היסעים"] },
+        { "time": "14:20-14:45", "type": "הפסקה" },
+        { "time": "14:50", "type": "נסיעה", "stops": ["רחבת היסעים","מערכות (איסוף מרכז של תחנות תחזוקה - מפורט במקרא)","דת\"ק 16","דת\"ק 13","דת\"ק 12","גף טכני 160","דת\"ק 7","דת\"ק 8","דלק 21","נשמ\"ת","גף טכני 109","גף טיסה 109","רכבת כפר יהושע"] },
+        { "time": "15:20", "type": "נסיעה", "stops": ["רכבת כפר יהושע","גף טכני 109","גף טיסה 109","נשמ\"ת","דת\"ק 7","דת\"ק 8","דלק 21","גף טכני 160","דת\"ק 12","דת\"ק 13","דת\"ק 16","שירותי קרקע","גף אוהד","גל\"א","גף אוויוניקה","גף מבנה","מרכז אחזקה","מוסכים א/ב","מנועים","חילוץ","רחבת היסעים"] },
+        { "time": "15:50", "type": "נסיעה", "stops": ["רחבת היסעים","מערכות (איסוף מרכז של תחנות תחזוקה - מפורט במקרא)","דת\"ק 16","דת\"ק 13","דת\"ק 12","גף טכני 160","דת\"ק 7","דת\"ק 8","דלק 21","נשמ\"ת","גף טכני 109","גף טיסה 109","רכבת כפר יהושע"] },
+        { "time": "16:30", "type": "נסיעה", "stops": ["רכבת כפר יהושע","גף טכני 109","גף טיסה 109","נשמ\"ת","דת\"ק 7","דת\"ק 8","דלק 21","גף טכני 160","דת\"ק 12","דת\"ק 13","דת\"ק 16","שירותי קרקע","גף אוהד","גל\"א","גף אוויוניקה","גף מבנה","מרכז אחזקה","מוסכים א/ב","מנועים","חילוץ","רחבת היסעים"] },
+        { "time": "16:50", "type": "נסיעה", "stops": ["רחבת היסעים","מערכות (איסוף מרכז של תחנות תחזוקה - מפורט במקרא)","דת\"ק 16","דת\"ק 13","דת\"ק 12","גף טכני 160","דת\"ק 7","דת\"ק 8","דלק 21","נשמ\"ת","גף טכני 109","גף טיסה 109","רכבת כפר יהושע"] },
+        { "time": "17:30", "type": "נסיעה", "stops": ["רכבת כפר יהושע","גף טכני 109","גף טיסה 109","נשמ\"ת","דת\"ק 7","דת\"ק 8","דלק 21","גף טכני 160","דת\"ק 12","דת\"ק 13","דת\"ק 16","שירותי קרקע","גף אוהד","גל\"א","גף אוויוניקה","גף מבנה","מרכז אחזקה","מוסכים א/ב","מנועים","חילוץ","רחבת היסעים"] },
+        { "time": "סוף יום", "type": "סוף יום" }
+      ]
+    }
+  ]
+};
 
-  stopsSearch.addEventListener("input", (e) => {
-    renderStops(e.target.value);
+// ─── Helpers ───
+function esc(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+const chevronSVG = `<svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>`;
+const smallChevronSVG = `<svg class="tl-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>`;
+const arrowSVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>`;
+
+// ─── Render Stations ───
+function renderStations() {
+  const container = document.getElementById('stations-list');
+  container.innerHTML = DATA.units.map(unit => {
+    const deptCount = unit.departments.length;
+    const stationBadge = unit.station
+      ? `<span class="unit-station-badge">${esc(unit.station)}</span>`
+      : '';
+    const noteHtml = unit.notes
+      ? `<div class="unit-note"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>${esc(unit.notes)}</div>`
+      : '';
+
+    const deptsHtml = unit.departments.map(dept => {
+      const isService = dept.type === 'תחנת שירות';
+      const dotClass = isService ? 'service' : 'alt';
+      const goesTo = dept.goes_to
+        ? `<span class="dept-goes-to">${arrowSVG} ${esc(dept.goes_to)}</span>`
+        : '';
+      return `
+        <div class="dept-item">
+          <div class="dept-info">
+            <span class="dept-dot ${dotClass}"></span>
+            <span class="dept-name">${esc(dept.name)}</span>
+          </div>
+          ${goesTo}
+        </div>`;
+    }).join('');
+
+    return `
+      <div class="unit-card">
+        <div class="unit-header" onclick="this.parentElement.classList.toggle('open')">
+          <div class="unit-title">
+            ${esc(unit.name)}
+            <span class="unit-count">${deptCount}</span>
+            ${stationBadge}
+          </div>
+          <div class="unit-meta">
+            ${chevronSVG}
+          </div>
+        </div>
+        <div class="unit-body">
+          ${noteHtml}
+          <div class="dept-list">
+            ${deptsHtml}
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// ─── Render Routes ───
+let activeRoute = 0;
+
+function renderRouteTabs() {
+  const container = document.getElementById('route-tabs');
+  container.innerHTML = DATA.bus_routes.map((route, i) => {
+    const label = route.name.split(' - ')[0] || route.name;
+    return `<button class="route-tab ${i === 0 ? 'active' : ''}" data-route="${i}">${esc(label)}</button>`;
+  }).join('');
+
+  container.addEventListener('click', (e) => {
+    const btn = e.target.closest('.route-tab');
+    if (!btn) return;
+    activeRoute = parseInt(btn.dataset.route);
+    container.querySelectorAll('.route-tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    renderRouteContent();
   });
 }
 
-// יעד בסיסי והכוונה
-function setupDestinationPlanner() {
-  const currentSelect = document.getElementById("currentStopSelect");
-  const destinationSelect = document.getElementById("destinationStopSelect");
-  const planButton = document.getElementById("planRouteBtn");
+function renderRouteContent() {
+  const route = DATA.bus_routes[activeRoute];
+  const container = document.getElementById('route-content');
 
-  if (!currentSelect || !destinationSelect || !planButton) return;
+  const phoneHtml = route.phone
+    ? `<div class="route-phone"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>${route.phone}</div>`
+    : '';
 
-  const sortedStops = [...shuttleData.stops].sort((a, b) =>
-    a.name.localeCompare(b.name, "he"),
-  );
-  const options = sortedStops
-    .map((stop) => `<option value="${stop.id}">${stop.name}</option>`)
-    .join("");
-  currentSelect.innerHTML = options;
-  destinationSelect.innerHTML = options;
+  const headerHtml = `
+    <div class="route-header">
+      <div class="route-name">${esc(route.name)}</div>
+      ${phoneHtml}
+    </div>`;
 
-  const defaultCurrent =
-    shuttleData.stops.find((stop) => stop.isHub) || shuttleData.stops[0];
-  const defaultDestination =
-    shuttleData.stops.find((stop) => stop.id === "hda") || sortedStops[0];
+  const timelineHtml = route.schedule.map(entry => {
+    const type = entry.type;
 
-  if (defaultCurrent) currentSelect.value = defaultCurrent.id;
-  if (defaultDestination) destinationSelect.value = defaultDestination.id;
+    if (type === 'הפסקה') {
+      return `
+        <div class="tl-entry break-entry">
+          <div class="tl-dot"></div>
+          <div class="tl-time">${esc(entry.time)}</div>
+          <div class="tl-break">הפסקה</div>
+        </div>`;
+    }
 
-  planButton.addEventListener("click", () => {
-    const currentStopId = currentSelect.value;
-    const destinationStopId = destinationSelect.value;
-    renderDestinationInfo(
-      destinationStopId,
-      currentStopId,
-      "routeResult",
-      true,
-    );
-  });
+    if (type === 'איסוף') {
+      return `
+        <div class="tl-entry pickup">
+          <div class="tl-dot"></div>
+          <div class="tl-time">${esc(entry.time)}</div>
+          <div class="tl-pickup">${esc(entry.description || 'איסוף')}</div>
+        </div>`;
+    }
 
-  renderDestinationInfo(
-    destinationSelect.value,
-    currentSelect.value,
-    "routeResult",
-    true,
-  );
+    if (type === 'סוף יום') {
+      return `
+        <div class="tl-entry end">
+          <div class="tl-dot"></div>
+          <div class="tl-time">${esc(entry.time)}</div>
+          <div class="tl-end">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="9" x2="15" y2="15"/><line x1="15" y1="9" x2="9" y2="15"/></svg>
+            סוף יום
+          </div>
+        </div>`;
+    }
+
+    // נסיעה
+    const stops = entry.stops || [];
+    const stopsHtml = stops.map((stop, i) =>
+      `<div class="stop-item"><span class="stop-num">${i + 1}</span>${esc(stop)}</div>`
+    ).join('');
+
+    return `
+      <div class="tl-entry trip">
+        <div class="tl-dot"></div>
+        <div class="tl-time">${esc(entry.time)}</div>
+        <div class="tl-card" onclick="this.classList.toggle('open')">
+          <div class="tl-card-header">
+            <span class="tl-type-badge trip-badge">נסיעה</span>
+            <span class="tl-stop-count">${stops.length} תחנות</span>
+            ${smallChevronSVG}
+          </div>
+          <div class="tl-stops">
+            <div class="tl-stops-inner">
+              ${stopsHtml}
+            </div>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+
+  container.innerHTML = headerHtml + `<div class="timeline">${timelineHtml}</div>`;
 }
 
-function renderDestinationInfo(
-  destinationStopId,
-  currentStopId,
-  targetId,
-  isCustom = false,
-) {
-  const container = document.getElementById(targetId);
-  if (!container) return;
-
-  if (!currentStopId || !destinationStopId) {
-    container.innerHTML =
-      '<div class="direction-meta">בחרו מיקום ויעד לקבלת מסלול.</div>';
-    return;
-  }
-
-  if (currentStopId === destinationStopId) {
-    const destName = getStopName(destinationStopId);
-    container.innerHTML = `
-      <div class="direction-title">כבר ביעד</div>
-      <div class="direction-line">את/ה נמצא/ת ב-${destName}</div>
-    `;
-    return;
-  }
-
-  const suggestion = getBestRouteSuggestion(currentStopId, destinationStopId);
-  if (!suggestion) {
-    container.innerHTML =
-      '<div class="direction-meta">לא נמצאה נסיעה ישירה. נסו לבחור יעד אחר או בדקו בלוח הזמנים.</div>';
-    return;
-  }
-
-  const routeName = suggestion.route.name || `קו ${suggestion.route.id}`;
-  const destName = getStopName(destinationStopId);
-  const originName = getStopName(currentStopId);
-  const nextText = suggestion.nextTrip
-    ? `נסיעה הבאה: ${suggestion.nextTrip.time}`
-    : "אין נסיעה קרובה היום";
-  const directionLine =
-    suggestion.direction === "forward"
-      ? `${originName} ← ... ← ${destName}`
-      : `${destName} ← ... ← ${originName}`;
-
-  container.innerHTML = `
-    <div class="direction-title">${isCustom ? "מסלול מומלץ" : "איך להגיע עכשיו"}</div>
-    <div class="direction-line">קו ${suggestion.route.id} • ${routeName}</div>
-    <div class="direction-badge">${nextText}</div>
-    <div class="direction-meta">כיוון נסיעה: ${directionLine}</div>
-  `;
-}
-
-function getBestRouteSuggestion(currentStopId, destinationStopId) {
-  const candidates = [];
-  shuttleData.routes.forEach((route) => {
-    route.schedule.forEach((trip) => {
-      if (!trip.stops || trip.type === "break" || trip.type === "end") return;
-      const fromIndex = trip.stops.indexOf(currentStopId);
-      const toIndex = trip.stops.indexOf(destinationStopId);
-      if (fromIndex !== -1 && toIndex !== -1 && fromIndex !== toIndex) {
-        candidates.push({
-          route,
-          trip,
-          fromIndex,
-          toIndex,
-          direction: fromIndex < toIndex ? "forward" : "backward",
-        });
-      }
+// ─── Tab Navigation ───
+function initTabs() {
+  const tabs = document.querySelectorAll('.nav-tab');
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      tabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      document.getElementById(`${tab.dataset.tab}-panel`).classList.add('active');
     });
   });
-
-  if (candidates.length === 0) return null;
-
-  const currentMins = getCurrentMinutes();
-  const upcoming = candidates
-    .map((candidate) => {
-      const mins = parseTime(candidate.trip.time);
-      return { ...candidate, mins };
-    })
-    .filter((candidate) => candidate.mins >= currentMins)
-    .sort((a, b) => a.mins - b.mins);
-
-  const best = upcoming[0] || candidates[0];
-  return {
-    route: best.route,
-    direction: best.direction,
-    nextTrip: upcoming[0]?.trip || null,
-  };
 }
 
-// הפעלה
-loadData();
+// ─── Init ───
+document.addEventListener('DOMContentLoaded', () => {
+  renderStations();
+  renderRouteTabs();
+  renderRouteContent();
+  initTabs();
+});
