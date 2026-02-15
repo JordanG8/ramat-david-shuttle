@@ -7,12 +7,17 @@
     "description": "לוח זמנים לשאטל פנימי בבסיס חיל האוויר רמת דוד"
   },
   "stops": [
-    { "id": "havat_hasaim", "name": "חבת הסעים", "isHub": true, "color": "green" },
+    {
+      "id": "havat_hasaim",
+      "name": "רחבת הסעים",
+      "isHub": true,
+      "color": "green"
+    },
     { "id": "kolnoa", "name": "קולנוע", "color": "green" },
     { "id": "migdal", "name": "מגדל", "color": "green" },
     { "id": "mifkada", "name": "מפקדה", "color": "green" },
     { "id": "britannia", "name": "בריטניה", "color": "green" },
-    { "id": "mitham_breichonim", "name": "מתחם בריכונים", "color": "green" },
+    { "id": "mitham_breichonim", "name": "מתחם בידונים", "color": "green" },
     { "id": "gaf_tisa_105", "name": "גף טיסה 105", "color": "green" },
     { "id": "gaf_techni_105", "name": "גף טכני 105", "color": "green" },
     { "id": "gaf_tisa_109", "name": "גף טיסה 109", "color": "green" },
@@ -20,10 +25,20 @@
     { "id": "gaf_techni_160", "name": "גף טכני 160", "color": "green" },
     { "id": "nshmt", "name": "נשמ\"ת", "color": "green" },
     { "id": "delek_21", "name": "דלק 21", "color": "green" },
-    { "id": "rakevet_kfar_yehoshua", "name": "רכבת כפר יהושע", "isHub": true, "color": "green" },
+    {
+      "id": "rakevet_kfar_yehoshua",
+      "name": "רכבת כפר יהושע",
+      "isHub": true,
+      "color": "green"
+    },
     { "id": "tzomet_ramat_david", "name": "צומת רמת דוד", "color": "green" },
     { "id": "shag_kidmi", "name": "ש\"ג קדמי", "color": "green" },
-    { "id": "maarachot", "name": "מערכות", "color": "yellow", "note": "איסוף מרכזי של תחנות תחזוקה" },
+    {
+      "id": "maarachot",
+      "name": "מערכות",
+      "color": "yellow",
+      "note": "איסוף מרכזי של תחנות תחזוקה"
+    },
     { "id": "shirutei_karka", "name": "שירותי קרקע", "color": "green" },
     { "id": "gaf_ohad", "name": "גף אוהד", "color": "green" },
     { "id": "gala", "name": "גל\"א", "color": "green" },
@@ -92,13 +107,41 @@
           "time": "7:20",
           "type": "loop",
           "description": "מעגל ראשי",
-          "stops": ["havat_hasaim", "kolnoa", "dtk_17", "dtk_2", "migdal", "gaf_tisa_105", "gaf_techni_105", "mitham_breichonim", "dtk_34", "dtk_32", "dtk_9", "britannia", "havat_hasaim"]
+          "stops": [
+            "havat_hasaim",
+            "kolnoa",
+            "dtk_17",
+            "dtk_2",
+            "migdal",
+            "gaf_tisa_105",
+            "gaf_techni_105",
+            "mitham_breichonim",
+            "dtk_34",
+            "dtk_32",
+            "dtk_9",
+            "britannia",
+            "havat_hasaim"
+          ]
         },
         {
           "time": "7:40",
           "type": "loop",
           "description": "מעגל ראשי",
-          "stops": ["havat_hasaim", "kolnoa", "dtk_17", "dtk_2", "migdal", "gaf_tisa_105", "gaf_techni_105", "mitham_breichonim", "dtk_34", "dtk_32", "dtk_9", "britannia", "havat_hasaim"]
+          "stops": [
+            "havat_hasaim",
+            "kolnoa",
+            "dtk_17",
+            "dtk_2",
+            "migdal",
+            "gaf_tisa_105",
+            "gaf_techni_105",
+            "mitham_breichonim",
+            "dtk_34",
+            "dtk_32",
+            "dtk_9",
+            "britannia",
+            "havat_hasaim"
+          ]
         },
         {
           "time": "8:00",
@@ -110,13 +153,61 @@
           "time": "8:20",
           "type": "maintenance_train",
           "description": "מסלול תחזוקה לרכבת",
-          "stops": ["havat_hasaim", "maarachot", "dtk_16", "dtk_13", "dtk_12", "gaf_techni_160", "dtk_7", "dtk_8", "delek_21", "nshmt", "gaf_techni_109", "gaf_tisa_109", "rakevet_kfar_yehoshua"]
+          "stops": [
+            "havat_hasaim",
+            "maarachot",
+            "dtk_16",
+            "dtk_13",
+            "dtk_12",
+            "gaf_techni_160",
+            "dtk_7",
+            "dtk_8",
+            "delek_21",
+            "nshmt",
+            "gaf_techni_109",
+            "gaf_tisa_109",
+            "rakevet_kfar_yehoshua"
+          ]
         },
         {
           "time": "8:40",
           "type": "full_loop",
           "description": "מעגל מלא כולל תחזוקה",
-          "stops": ["rakevet_kfar_yehoshua", "gaf_techni_109", "gaf_tisa_109", "nshmt", "dtk_7", "dtk_8", "delek_21", "gaf_techni_160", "dtk_12", "dtk_13", "dtk_16", "shirutei_karka", "gaf_ohad", "gala", "gaf_avionika", "gaf_mivne", "merkaz_achzaka", "musachim_ab", "menoim", "hilutz", "havat_hasaim", "kolnoa", "dtk_17", "dtk_2", "gaf_tisa_105", "gaf_techni_105", "mitham_breichonim", "migdal", "dtk_34", "dtk_32", "dtk_9", "britannia", "havat_hasaim"]
+          "stops": [
+            "rakevet_kfar_yehoshua",
+            "gaf_techni_109",
+            "gaf_tisa_109",
+            "nshmt",
+            "dtk_7",
+            "dtk_8",
+            "delek_21",
+            "gaf_techni_160",
+            "dtk_12",
+            "dtk_13",
+            "dtk_16",
+            "shirutei_karka",
+            "gaf_ohad",
+            "gala",
+            "gaf_avionika",
+            "gaf_mivne",
+            "merkaz_achzaka",
+            "musachim_ab",
+            "menoim",
+            "hilutz",
+            "havat_hasaim",
+            "kolnoa",
+            "dtk_17",
+            "dtk_2",
+            "gaf_tisa_105",
+            "gaf_techni_105",
+            "mitham_breichonim",
+            "migdal",
+            "dtk_34",
+            "dtk_32",
+            "dtk_9",
+            "britannia",
+            "havat_hasaim"
+          ]
         },
         {
           "time": "9:20-10:00",
@@ -127,25 +218,99 @@
           "time": "10:00",
           "type": "loop",
           "description": "מעגל ראשי",
-          "stops": ["havat_hasaim", "kolnoa", "dtk_17", "dtk_2", "migdal", "gaf_techni_105", "gaf_tisa_105", "mitham_breichonim", "dtk_34", "dtk_32", "dtk_9", "britannia", "havat_hasaim"]
+          "stops": [
+            "havat_hasaim",
+            "kolnoa",
+            "dtk_17",
+            "dtk_2",
+            "migdal",
+            "gaf_techni_105",
+            "gaf_tisa_105",
+            "mitham_breichonim",
+            "dtk_34",
+            "dtk_32",
+            "dtk_9",
+            "britannia",
+            "havat_hasaim"
+          ]
         },
         {
           "time": "10:30",
           "type": "maintenance_train",
           "description": "מסלול תחזוקה לרכבת",
-          "stops": ["havat_hasaim", "maarachot", "dtk_16", "dtk_13", "dtk_12", "gaf_techni_160", "dtk_7", "dtk_8", "delek_21", "nshmt", "gaf_techni_109", "gaf_tisa_109", "rakevet_kfar_yehoshua"]
+          "stops": [
+            "havat_hasaim",
+            "maarachot",
+            "dtk_16",
+            "dtk_13",
+            "dtk_12",
+            "gaf_techni_160",
+            "dtk_7",
+            "dtk_8",
+            "delek_21",
+            "nshmt",
+            "gaf_techni_109",
+            "gaf_tisa_109",
+            "rakevet_kfar_yehoshua"
+          ]
         },
         {
           "time": "11:00",
           "type": "full_loop",
           "description": "מעגל מלא כולל תחזוקה",
-          "stops": ["rakevet_kfar_yehoshua", "gaf_techni_109", "gaf_tisa_109", "nshmt", "dtk_7", "dtk_8", "delek_21", "gaf_techni_160", "dtk_12", "dtk_13", "dtk_16", "shirutei_karka", "gaf_ohad", "gala", "gaf_avionika", "gaf_mivne", "merkaz_achzaka", "musachim_ab", "menoim", "hilutz", "havat_hasaim", "kolnoa", "dtk_17", "dtk_2", "gaf_tisa_105", "gaf_techni_105", "mitham_breichonim", "migdal", "dtk_34", "dtk_32", "dtk_9", "britannia", "havat_hasaim"]
+          "stops": [
+            "rakevet_kfar_yehoshua",
+            "gaf_techni_109",
+            "gaf_tisa_109",
+            "nshmt",
+            "dtk_7",
+            "dtk_8",
+            "delek_21",
+            "gaf_techni_160",
+            "dtk_12",
+            "dtk_13",
+            "dtk_16",
+            "shirutei_karka",
+            "gaf_ohad",
+            "gala",
+            "gaf_avionika",
+            "gaf_mivne",
+            "merkaz_achzaka",
+            "musachim_ab",
+            "menoim",
+            "hilutz",
+            "havat_hasaim",
+            "kolnoa",
+            "dtk_17",
+            "dtk_2",
+            "gaf_tisa_105",
+            "gaf_techni_105",
+            "mitham_breichonim",
+            "migdal",
+            "dtk_34",
+            "dtk_32",
+            "dtk_9",
+            "britannia",
+            "havat_hasaim"
+          ]
         },
         {
           "time": "11:20",
           "type": "maintenance",
           "description": "מסלול תחזוקה",
-          "stops": ["gaf_tisa_109", "gaf_techni_109", "nshmt", "dtk_7", "dtk_8", "delek_21", "gaf_techni_160", "dtk_12", "dtk_13", "dtk_16", "hda"]
+          "stops": [
+            "gaf_tisa_109",
+            "gaf_techni_109",
+            "nshmt",
+            "dtk_7",
+            "dtk_8",
+            "delek_21",
+            "gaf_techni_160",
+            "dtk_12",
+            "dtk_13",
+            "dtk_16",
+            "hda"
+          ]
         },
         {
           "time": "11:30-12:00",
@@ -156,13 +321,40 @@
           "time": "12:05",
           "type": "maintenance_short",
           "description": "מסלול תחזוקה קצר",
-          "stops": ["hda", "gaf_menoim", "gaf_maarachot", "shirutei_karka", "gaf_ohad", "gala", "gaf_avionika", "gaf_mivne", "merkaz_achzaka", "musachim_ab", "hilutz", "hda"]
+          "stops": [
+            "hda",
+            "gaf_menoim",
+            "gaf_maarachot",
+            "shirutei_karka",
+            "gaf_ohad",
+            "gala",
+            "gaf_avionika",
+            "gaf_mivne",
+            "merkaz_achzaka",
+            "musachim_ab",
+            "hilutz",
+            "hda"
+          ]
         },
         {
           "time": "12:20",
           "type": "maintenance_train",
           "description": "מסלול תחזוקה",
-          "stops": ["hda", "havat_hasaim", "dtk_16", "dtk_13", "dtk_12", "gaf_techni_160", "dtk_7", "dtk_8", "nshmt", "gaf_tisa_109", "gaf_techni_109", "delek_21", "hda"]
+          "stops": [
+            "hda",
+            "havat_hasaim",
+            "dtk_16",
+            "dtk_13",
+            "dtk_12",
+            "gaf_techni_160",
+            "dtk_7",
+            "dtk_8",
+            "nshmt",
+            "gaf_tisa_109",
+            "gaf_techni_109",
+            "delek_21",
+            "hda"
+          ]
         },
         {
           "time": "12:30-13:15",
@@ -173,13 +365,40 @@
           "time": "13:00",
           "type": "maintenance_short",
           "description": "מסלול תחזוקה קצר",
-          "stops": ["hda", "gaf_menoim", "gaf_maarachot", "shirutei_karka", "gaf_ohad", "gala", "gaf_avionika", "gaf_mivne", "merkaz_achzaka", "musachim_ab", "hilutz", "hda"]
+          "stops": [
+            "hda",
+            "gaf_menoim",
+            "gaf_maarachot",
+            "shirutei_karka",
+            "gaf_ohad",
+            "gala",
+            "gaf_avionika",
+            "gaf_mivne",
+            "merkaz_achzaka",
+            "musachim_ab",
+            "hilutz",
+            "hda"
+          ]
         },
         {
           "time": "13:30",
           "type": "maintenance_train",
           "description": "מסלול תחזוקה",
-          "stops": ["hda", "havat_hasaim", "dtk_16", "dtk_13", "dtk_12", "gaf_techni_160", "dtk_7", "dtk_8", "nshmt", "gaf_tisa_109", "gaf_techni_109", "delek_21", "hda"]
+          "stops": [
+            "hda",
+            "havat_hasaim",
+            "dtk_16",
+            "dtk_13",
+            "dtk_12",
+            "gaf_techni_160",
+            "dtk_7",
+            "dtk_8",
+            "nshmt",
+            "gaf_tisa_109",
+            "gaf_techni_109",
+            "delek_21",
+            "hda"
+          ]
         },
         {
           "time": "13:45-14:30",
@@ -190,37 +409,169 @@
           "time": "14:30",
           "type": "maintenance_train",
           "description": "מסלול תחזוקה לרכבת",
-          "stops": ["havat_hasaim", "maarachot", "dtk_16", "dtk_13", "dtk_12", "gaf_techni_160", "dtk_7", "dtk_8", "delek_21", "nshmt", "gaf_techni_109", "gaf_tisa_109", "rakevet_kfar_yehoshua"]
+          "stops": [
+            "havat_hasaim",
+            "maarachot",
+            "dtk_16",
+            "dtk_13",
+            "dtk_12",
+            "gaf_techni_160",
+            "dtk_7",
+            "dtk_8",
+            "delek_21",
+            "nshmt",
+            "gaf_techni_109",
+            "gaf_tisa_109",
+            "rakevet_kfar_yehoshua"
+          ]
         },
         {
           "time": "14:45",
           "type": "full_loop",
           "description": "מעגל מלא כולל תחזוקה",
-          "stops": ["rakevet_kfar_yehoshua", "gaf_techni_109", "gaf_tisa_109", "nshmt", "dtk_7", "dtk_8", "delek_21", "gaf_techni_160", "dtk_12", "dtk_13", "dtk_16", "shirutei_karka", "gaf_ohad", "gala", "gaf_avionika", "gaf_mivne", "merkaz_achzaka", "musachim_ab", "menoim", "hilutz", "havat_hasaim", "kolnoa", "dtk_17", "dtk_2", "gaf_tisa_105", "gaf_techni_105", "mitham_breichonim", "migdal", "dtk_34", "dtk_32", "dtk_9", "britannia", "havat_hasaim"]
+          "stops": [
+            "rakevet_kfar_yehoshua",
+            "gaf_techni_109",
+            "gaf_tisa_109",
+            "nshmt",
+            "dtk_7",
+            "dtk_8",
+            "delek_21",
+            "gaf_techni_160",
+            "dtk_12",
+            "dtk_13",
+            "dtk_16",
+            "shirutei_karka",
+            "gaf_ohad",
+            "gala",
+            "gaf_avionika",
+            "gaf_mivne",
+            "merkaz_achzaka",
+            "musachim_ab",
+            "menoim",
+            "hilutz",
+            "havat_hasaim",
+            "kolnoa",
+            "dtk_17",
+            "dtk_2",
+            "gaf_tisa_105",
+            "gaf_techni_105",
+            "mitham_breichonim",
+            "migdal",
+            "dtk_34",
+            "dtk_32",
+            "dtk_9",
+            "britannia",
+            "havat_hasaim"
+          ]
         },
         {
           "time": "15:30",
           "type": "maintenance_train",
           "description": "מסלול תחזוקה לרכבת",
-          "stops": ["havat_hasaim", "maarachot", "dtk_16", "dtk_13", "dtk_12", "gaf_techni_160", "dtk_7", "dtk_8", "delek_21", "nshmt", "gaf_techni_109", "gaf_tisa_109", "rakevet_kfar_yehoshua"]
+          "stops": [
+            "havat_hasaim",
+            "maarachot",
+            "dtk_16",
+            "dtk_13",
+            "dtk_12",
+            "gaf_techni_160",
+            "dtk_7",
+            "dtk_8",
+            "delek_21",
+            "nshmt",
+            "gaf_techni_109",
+            "gaf_tisa_109",
+            "rakevet_kfar_yehoshua"
+          ]
         },
         {
           "time": "16:10",
           "type": "full_loop",
           "description": "מעגל מלא כולל תחזוקה",
-          "stops": ["rakevet_kfar_yehoshua", "gaf_techni_109", "gaf_tisa_109", "nshmt", "dtk_7", "dtk_8", "delek_21", "gaf_techni_160", "dtk_12", "dtk_13", "dtk_16", "shirutei_karka", "gaf_ohad", "gala", "gaf_avionika", "gaf_mivne", "merkaz_achzaka", "musachim_ab", "menoim", "hilutz", "havat_hasaim", "kolnoa", "dtk_17", "dtk_2", "gaf_tisa_105", "gaf_techni_105", "mitham_breichonim", "migdal", "dtk_34", "dtk_32", "dtk_9", "britannia", "havat_hasaim"]
+          "stops": [
+            "rakevet_kfar_yehoshua",
+            "gaf_techni_109",
+            "gaf_tisa_109",
+            "nshmt",
+            "dtk_7",
+            "dtk_8",
+            "delek_21",
+            "gaf_techni_160",
+            "dtk_12",
+            "dtk_13",
+            "dtk_16",
+            "shirutei_karka",
+            "gaf_ohad",
+            "gala",
+            "gaf_avionika",
+            "gaf_mivne",
+            "merkaz_achzaka",
+            "musachim_ab",
+            "menoim",
+            "hilutz",
+            "havat_hasaim",
+            "kolnoa",
+            "dtk_17",
+            "dtk_2",
+            "gaf_tisa_105",
+            "gaf_techni_105",
+            "mitham_breichonim",
+            "migdal",
+            "dtk_34",
+            "dtk_32",
+            "dtk_9",
+            "britannia",
+            "havat_hasaim"
+          ]
         },
         {
           "time": "16:30",
           "type": "maintenance_train",
           "description": "מסלול תחזוקה לרכבת",
-          "stops": ["havat_hasaim", "maarachot", "dtk_16", "dtk_13", "dtk_12", "gaf_techni_160", "dtk_7", "dtk_8", "delek_21", "nshmt", "gaf_techni_109", "gaf_tisa_109", "rakevet_kfar_yehoshua"]
+          "stops": [
+            "havat_hasaim",
+            "maarachot",
+            "dtk_16",
+            "dtk_13",
+            "dtk_12",
+            "gaf_techni_160",
+            "dtk_7",
+            "dtk_8",
+            "delek_21",
+            "nshmt",
+            "gaf_techni_109",
+            "gaf_tisa_109",
+            "rakevet_kfar_yehoshua"
+          ]
         },
         {
           "time": "17:10",
           "type": "full_loop",
           "description": "מעגל מלא כולל תחזוקה",
-          "stops": ["rakevet_kfar_yehoshua", "gaf_techni_109", "gaf_tisa_109", "nshmt", "dtk_7", "dtk_8", "delek_21", "gaf_techni_160", "dtk_12", "dtk_13", "dtk_16", "shirutei_karka", "gaf_ohad", "gala", "gaf_avionika", "gaf_mivne", "merkaz_achzaka", "musachim_ab", "menoim", "hilutz", "havat_hasaim"]
+          "stops": [
+            "rakevet_kfar_yehoshua",
+            "gaf_techni_109",
+            "gaf_tisa_109",
+            "nshmt",
+            "dtk_7",
+            "dtk_8",
+            "delek_21",
+            "gaf_techni_160",
+            "dtk_12",
+            "dtk_13",
+            "dtk_16",
+            "shirutei_karka",
+            "gaf_ohad",
+            "gala",
+            "gaf_avionika",
+            "gaf_mivne",
+            "merkaz_achzaka",
+            "musachim_ab",
+            "menoim",
+            "hilutz",
+            "havat_hasaim"
+          ]
         },
         {
           "time": "18:00",
@@ -246,13 +597,59 @@
           "time": "10:30",
           "type": "maintenance_train",
           "description": "מסלול תחזוקה לרכבת",
-          "stops": ["havat_hasaim", "maarachot", "dtk_16", "dtk_13", "dtk_12", "gaf_techni_160", "dtk_7", "dtk_8", "delek_21", "nshmt", "gaf_techni_109", "gaf_tisa_109", "rakevet_kfar_yehoshua"]
+          "stops": [
+            "havat_hasaim",
+            "maarachot",
+            "dtk_16",
+            "dtk_13",
+            "dtk_12",
+            "gaf_techni_160",
+            "dtk_7",
+            "dtk_8",
+            "delek_21",
+            "nshmt",
+            "gaf_techni_109",
+            "gaf_tisa_109",
+            "rakevet_kfar_yehoshua"
+          ]
         },
         {
           "time": "11:00",
           "type": "full_loop",
           "description": "מעגל מלא",
-          "stops": ["gaf_tisa_109", "gaf_techni_109", "nshmt", "dtk_7", "dtk_8", "delek_21", "gaf_techni_160", "dtk_12", "dtk_13", "dtk_16", "shirutei_karka", "gaf_ohad", "gala", "gaf_avionika", "gaf_mivne", "merkaz_achzaka", "musachim_ab", "menoim", "hilutz", "havat_hasaim", "kolnoa", "dtk_17", "dtk_2", "gaf_tisa_105", "gaf_techni_105", "mitham_breichonim", "dtk_34", "dtk_32", "dtk_9", "britannia", "havat_hasaim"]
+          "stops": [
+            "gaf_tisa_109",
+            "gaf_techni_109",
+            "nshmt",
+            "dtk_7",
+            "dtk_8",
+            "delek_21",
+            "gaf_techni_160",
+            "dtk_12",
+            "dtk_13",
+            "dtk_16",
+            "shirutei_karka",
+            "gaf_ohad",
+            "gala",
+            "gaf_avionika",
+            "gaf_mivne",
+            "merkaz_achzaka",
+            "musachim_ab",
+            "menoim",
+            "hilutz",
+            "havat_hasaim",
+            "kolnoa",
+            "dtk_17",
+            "dtk_2",
+            "gaf_tisa_105",
+            "gaf_techni_105",
+            "mitham_breichonim",
+            "dtk_34",
+            "dtk_32",
+            "dtk_9",
+            "britannia",
+            "havat_hasaim"
+          ]
         },
         {
           "time": "11:30-12:00",
@@ -268,13 +665,31 @@
           "time": "14:10",
           "type": "loop",
           "description": "מעגל",
-          "stops": ["dtk_34", "dtk_32", "migdal", "mitham_breichonim", "dtk_17", "dtk_2", "hda"]
+          "stops": [
+            "dtk_34",
+            "dtk_32",
+            "migdal",
+            "mitham_breichonim",
+            "dtk_17",
+            "dtk_2",
+            "hda"
+          ]
         },
         {
           "time": "14:40",
           "type": "maintenance_short",
           "description": "מסלול תחזוקה קצר",
-          "stops": ["mitham_breichonim", "shirutei_karka", "gaf_ohad", "gala", "gaf_mivne", "merkaz_achzaka", "musachim_ab", "hilutz", "hda"]
+          "stops": [
+            "mitham_breichonim",
+            "shirutei_karka",
+            "gaf_ohad",
+            "gala",
+            "gaf_mivne",
+            "merkaz_achzaka",
+            "musachim_ab",
+            "hilutz",
+            "hda"
+          ]
         },
         {
           "time": "15:10",
@@ -285,13 +700,31 @@
           "time": "15:40",
           "type": "loop",
           "description": "מעגל",
-          "stops": ["mitham_breichonim", "dtk_17", "dtk_2", "migdal", "dtk_34", "dtk_32", "dtk_9", "gaf_tisa_105", "britannia"]
+          "stops": [
+            "mitham_breichonim",
+            "dtk_17",
+            "dtk_2",
+            "migdal",
+            "dtk_34",
+            "dtk_32",
+            "dtk_9",
+            "gaf_tisa_105",
+            "britannia"
+          ]
         },
         {
           "time": "16:10",
           "type": "loop",
           "description": "מעגל",
-          "stops": ["mitham_breichonim", "migdal", "dtk_34", "dtk_32", "dtk_17", "dtk_2", "hda"]
+          "stops": [
+            "mitham_breichonim",
+            "migdal",
+            "dtk_34",
+            "dtk_32",
+            "dtk_17",
+            "dtk_2",
+            "hda"
+          ]
         },
         {
           "time": "16:40",
@@ -326,19 +759,64 @@
           "time": "10:00",
           "type": "maintenance_train",
           "description": "מעגל צומת",
-          "stops": ["tzomet_ramat_david", "havat_hasaim", "maarachot", "dtk_16", "dtk_13", "dtk_12", "gaf_techni_160", "dtk_7", "dtk_8", "delek_21", "nshmt", "gaf_techni_109", "gaf_tisa_109", "tzomet_ramat_david"]
+          "stops": [
+            "tzomet_ramat_david",
+            "havat_hasaim",
+            "maarachot",
+            "dtk_16",
+            "dtk_13",
+            "dtk_12",
+            "gaf_techni_160",
+            "dtk_7",
+            "dtk_8",
+            "delek_21",
+            "nshmt",
+            "gaf_techni_109",
+            "gaf_tisa_109",
+            "tzomet_ramat_david"
+          ]
         },
         {
           "time": "10:30",
           "type": "maintenance_train",
           "description": "מעגל צומת",
-          "stops": ["tzomet_ramat_david", "havat_hasaim", "maarachot", "dtk_16", "dtk_13", "dtk_12", "gaf_techni_160", "dtk_7", "dtk_8", "delek_21", "nshmt", "gaf_techni_109", "gaf_tisa_109", "tzomet_ramat_david"]
+          "stops": [
+            "tzomet_ramat_david",
+            "havat_hasaim",
+            "maarachot",
+            "dtk_16",
+            "dtk_13",
+            "dtk_12",
+            "gaf_techni_160",
+            "dtk_7",
+            "dtk_8",
+            "delek_21",
+            "nshmt",
+            "gaf_techni_109",
+            "gaf_tisa_109",
+            "tzomet_ramat_david"
+          ]
         },
         {
           "time": "11:00",
           "type": "maintenance_train",
           "description": "מעגל צומת",
-          "stops": ["tzomet_ramat_david", "havat_hasaim", "maarachot", "dtk_16", "dtk_13", "dtk_12", "gaf_techni_160", "dtk_7", "dtk_8", "delek_21", "nshmt", "gaf_techni_109", "gaf_tisa_109", "tzomet_ramat_david"]
+          "stops": [
+            "tzomet_ramat_david",
+            "havat_hasaim",
+            "maarachot",
+            "dtk_16",
+            "dtk_13",
+            "dtk_12",
+            "gaf_techni_160",
+            "dtk_7",
+            "dtk_8",
+            "delek_21",
+            "nshmt",
+            "gaf_techni_109",
+            "gaf_tisa_109",
+            "tzomet_ramat_david"
+          ]
         },
         {
           "time": "11:30-12:00",
@@ -349,19 +827,64 @@
           "time": "12:10",
           "type": "maintenance_train",
           "description": "מעגל צומת",
-          "stops": ["tzomet_ramat_david", "havat_hasaim", "maarachot", "dtk_16", "dtk_13", "dtk_12", "gaf_techni_160", "dtk_7", "dtk_8", "delek_21", "nshmt", "gaf_techni_109", "gaf_tisa_109", "tzomet_ramat_david"]
+          "stops": [
+            "tzomet_ramat_david",
+            "havat_hasaim",
+            "maarachot",
+            "dtk_16",
+            "dtk_13",
+            "dtk_12",
+            "gaf_techni_160",
+            "dtk_7",
+            "dtk_8",
+            "delek_21",
+            "nshmt",
+            "gaf_techni_109",
+            "gaf_tisa_109",
+            "tzomet_ramat_david"
+          ]
         },
         {
           "time": "12:40",
           "type": "maintenance_train",
           "description": "מעגל צומת",
-          "stops": ["tzomet_ramat_david", "havat_hasaim", "maarachot", "dtk_16", "dtk_13", "dtk_12", "gaf_techni_160", "dtk_7", "dtk_8", "delek_21", "nshmt", "gaf_techni_109", "gaf_tisa_109", "tzomet_ramat_david"]
+          "stops": [
+            "tzomet_ramat_david",
+            "havat_hasaim",
+            "maarachot",
+            "dtk_16",
+            "dtk_13",
+            "dtk_12",
+            "gaf_techni_160",
+            "dtk_7",
+            "dtk_8",
+            "delek_21",
+            "nshmt",
+            "gaf_techni_109",
+            "gaf_tisa_109",
+            "tzomet_ramat_david"
+          ]
         },
         {
           "time": "13:10",
           "type": "maintenance_train",
           "description": "מעגל צומת",
-          "stops": ["tzomet_ramat_david", "havat_hasaim", "maarachot", "dtk_16", "dtk_13", "dtk_12", "gaf_techni_160", "dtk_7", "dtk_8", "delek_21", "nshmt", "gaf_techni_109", "gaf_tisa_109", "tzomet_ramat_david"]
+          "stops": [
+            "tzomet_ramat_david",
+            "havat_hasaim",
+            "maarachot",
+            "dtk_16",
+            "dtk_13",
+            "dtk_12",
+            "gaf_techni_160",
+            "dtk_7",
+            "dtk_8",
+            "delek_21",
+            "nshmt",
+            "gaf_techni_109",
+            "gaf_tisa_109",
+            "tzomet_ramat_david"
+          ]
         },
         {
           "time": "13:40-14:00",
@@ -372,19 +895,64 @@
           "time": "14:10",
           "type": "maintenance_train",
           "description": "מעגל צומת",
-          "stops": ["tzomet_ramat_david", "havat_hasaim", "maarachot", "dtk_16", "dtk_13", "dtk_12", "gaf_techni_160", "dtk_7", "dtk_8", "delek_21", "nshmt", "gaf_techni_109", "gaf_tisa_109", "tzomet_ramat_david"]
+          "stops": [
+            "tzomet_ramat_david",
+            "havat_hasaim",
+            "maarachot",
+            "dtk_16",
+            "dtk_13",
+            "dtk_12",
+            "gaf_techni_160",
+            "dtk_7",
+            "dtk_8",
+            "delek_21",
+            "nshmt",
+            "gaf_techni_109",
+            "gaf_tisa_109",
+            "tzomet_ramat_david"
+          ]
         },
         {
           "time": "14:40",
           "type": "maintenance_train",
           "description": "מעגל צומת",
-          "stops": ["tzomet_ramat_david", "havat_hasaim", "maarachot", "dtk_16", "dtk_13", "dtk_12", "gaf_techni_160", "dtk_7", "dtk_8", "delek_21", "nshmt", "gaf_techni_109", "gaf_tisa_109", "tzomet_ramat_david"]
+          "stops": [
+            "tzomet_ramat_david",
+            "havat_hasaim",
+            "maarachot",
+            "dtk_16",
+            "dtk_13",
+            "dtk_12",
+            "gaf_techni_160",
+            "dtk_7",
+            "dtk_8",
+            "delek_21",
+            "nshmt",
+            "gaf_techni_109",
+            "gaf_tisa_109",
+            "tzomet_ramat_david"
+          ]
         },
         {
           "time": "15:10",
           "type": "maintenance_train",
           "description": "מעגל צומת",
-          "stops": ["tzomet_ramat_david", "havat_hasaim", "maarachot", "dtk_16", "dtk_13", "dtk_12", "gaf_techni_160", "dtk_7", "dtk_8", "delek_21", "nshmt", "gaf_techni_109", "gaf_tisa_109", "tzomet_ramat_david"]
+          "stops": [
+            "tzomet_ramat_david",
+            "havat_hasaim",
+            "maarachot",
+            "dtk_16",
+            "dtk_13",
+            "dtk_12",
+            "gaf_techni_160",
+            "dtk_7",
+            "dtk_8",
+            "delek_21",
+            "nshmt",
+            "gaf_techni_109",
+            "gaf_tisa_109",
+            "tzomet_ramat_david"
+          ]
         },
         {
           "time": "15:40-16:10",
@@ -395,13 +963,43 @@
           "time": "16:10",
           "type": "maintenance_train",
           "description": "מעגל צומת",
-          "stops": ["tzomet_ramat_david", "havat_hasaim", "maarachot", "dtk_16", "dtk_13", "dtk_12", "gaf_techni_160", "dtk_7", "dtk_8", "delek_21", "nshmt", "gaf_techni_109", "gaf_tisa_109", "tzomet_ramat_david"]
+          "stops": [
+            "tzomet_ramat_david",
+            "havat_hasaim",
+            "maarachot",
+            "dtk_16",
+            "dtk_13",
+            "dtk_12",
+            "gaf_techni_160",
+            "dtk_7",
+            "dtk_8",
+            "delek_21",
+            "nshmt",
+            "gaf_techni_109",
+            "gaf_tisa_109",
+            "tzomet_ramat_david"
+          ]
         },
         {
           "time": "16:40",
           "type": "maintenance_train",
           "description": "מעגל צומת",
-          "stops": ["tzomet_ramat_david", "havat_hasaim", "maarachot", "dtk_16", "dtk_13", "dtk_12", "gaf_techni_160", "dtk_7", "dtk_8", "delek_21", "nshmt", "gaf_techni_109", "gaf_tisa_109", "tzomet_ramat_david"]
+          "stops": [
+            "tzomet_ramat_david",
+            "havat_hasaim",
+            "maarachot",
+            "dtk_16",
+            "dtk_13",
+            "dtk_12",
+            "gaf_techni_160",
+            "dtk_7",
+            "dtk_8",
+            "delek_21",
+            "nshmt",
+            "gaf_techni_109",
+            "gaf_tisa_109",
+            "tzomet_ramat_david"
+          ]
         },
         {
           "time": "17:30-18:00",
@@ -428,21 +1026,80 @@
       "subtitle": "תגבור רכבות ראשון וחמישי",
       "days": "ראשון וחמישי",
       "note": "מפורט במקרא - שירות לפי טייסות",
-      "squadrons": ["טייסת 109", "טייסת 160", "טייסת 105", "טייסת 144", "טייסת 101", "טייסת תעופה", "טייסת 302", "לשכה", "מנהלה", "טייסת תחזוקה"],
+      "squadrons": [
+        "טייסת 109",
+        "טייסת 160",
+        "טייסת 105",
+        "טייסת 144",
+        "טייסת 101",
+        "טייסת תעופה",
+        "טייסת 302",
+        "לשכה",
+        "מנהלה",
+        "טייסת תחזוקה"
+      ],
       "schedule": [
         {
           "time": "7:20",
           "type": "train_reinforcement",
           "description": "תגבור רכבת",
           "squadron": "כללי",
-          "stops": ["havat_hasaim", "maarachot", "dtk_16", "dtk_13", "dtk_12", "gaf_techni_160", "dtk_7", "dtk_8", "delek_21", "nshmt", "gaf_techni_109", "gaf_tisa_109", "rakevet_kfar_yehoshua"]
+          "stops": [
+            "havat_hasaim",
+            "maarachot",
+            "dtk_16",
+            "dtk_13",
+            "dtk_12",
+            "gaf_techni_160",
+            "dtk_7",
+            "dtk_8",
+            "delek_21",
+            "nshmt",
+            "gaf_techni_109",
+            "gaf_tisa_109",
+            "rakevet_kfar_yehoshua"
+          ]
         },
         {
           "time": "7:40",
           "type": "train_reinforcement",
           "description": "תגבור רכבת",
           "squadron": "טייסת 109",
-          "stops": ["rakevet_kfar_yehoshua", "gaf_techni_109", "gaf_tisa_109", "nshmt", "dtk_7", "dtk_8", "delek_21", "gaf_techni_160", "dtk_12", "dtk_13", "dtk_16", "shirutei_karka", "gaf_ohad", "gala", "gaf_avionika", "gaf_mivne", "merkaz_achzaka", "musachim_ab", "menoim", "hilutz", "havat_hasaim", "kolnoa", "dtk_17", "dtk_2", "gaf_tisa_105", "gaf_techni_105", "mitham_breichonim", "migdal", "dtk_34", "dtk_32", "dtk_9", "britannia", "havat_hasaim"]
+          "stops": [
+            "rakevet_kfar_yehoshua",
+            "gaf_techni_109",
+            "gaf_tisa_109",
+            "nshmt",
+            "dtk_7",
+            "dtk_8",
+            "delek_21",
+            "gaf_techni_160",
+            "dtk_12",
+            "dtk_13",
+            "dtk_16",
+            "shirutei_karka",
+            "gaf_ohad",
+            "gala",
+            "gaf_avionika",
+            "gaf_mivne",
+            "merkaz_achzaka",
+            "musachim_ab",
+            "menoim",
+            "hilutz",
+            "havat_hasaim",
+            "kolnoa",
+            "dtk_17",
+            "dtk_2",
+            "gaf_tisa_105",
+            "gaf_techni_105",
+            "mitham_breichonim",
+            "migdal",
+            "dtk_34",
+            "dtk_32",
+            "dtk_9",
+            "britannia",
+            "havat_hasaim"
+          ]
         },
         {
           "time": "8:20",
