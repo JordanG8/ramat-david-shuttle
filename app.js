@@ -1749,9 +1749,8 @@ const smallChevronSVG = `<svg class="tl-chevron" viewBox="0 0 24 24" fill="none"
 const arrowSVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>`;
 
 // ─── Render Stations ───
-function renderStations() {
-  const container = document.getElementById("stations-list");
-  container.innerHTML = DATA.units
+function renderStationsHtml() {
+  return DATA.units
     .map((unit) => {
       const deptCount = unit.departments.length;
       const stationBadge = unit.station
@@ -1806,36 +1805,7 @@ function renderStations() {
     .join("");
 }
 
-// ─── Tab Definitions ───
-const ROUTE_TABS = [
-  { id: "train", label: "רכבת כפר יהושוע" },
-  { id: "tzomet", label: "צומת רמת דוד" },
-  { id: "internal", label: "פנים כנף" },
-  { id: "hada", label: 'חד"א' },
-  { id: "oncall", label: "שאטל לפי קריאה" },
-];
-
-let activeRoute = "train";
-
-// ─── Render Routes ───
-function renderRouteTabs() {
-  const container = document.getElementById("route-tabs");
-  container.innerHTML = ROUTE_TABS.map(
-    (tab) =>
-      `<button class="route-tab ${tab.id === activeRoute ? "active" : ""}" data-route="${tab.id}">${esc(tab.label)}</button>`,
-  ).join("");
-
-  container.addEventListener("click", (e) => {
-    const btn = e.target.closest(".route-tab");
-    if (!btn) return;
-    activeRoute = btn.dataset.route;
-    container
-      .querySelectorAll(".route-tab")
-      .forEach((t) => t.classList.remove("active"));
-    btn.classList.add("active");
-    renderRouteContent();
-  });
-}
+let activeTab = "train";
 
 // ─── Icons ───
 const clockSVG = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
@@ -1851,34 +1821,34 @@ function renderStopsCard(stops) {
     )
     .join("");
   return `
-    <div class="card-block stops-block" onclick="this.classList.toggle('open')">
-      <div class="card-block-header">
+    <div class="card-block stops-block-static">
+      <div class="card-block-header static">
         <div class="card-block-title">${mapPinSVG} תחנות עצירה</div>
-        <div class="card-block-meta">
-          <span class="stop-count-badge">${stops.length} תחנות</span>
-          ${smallChevronSVG}
-        </div>
       </div>
-      <div class="card-block-body">
-        <div class="stops-list">
-          ${stopsHtml}
-        </div>
+      <div class="stops-list">
+        ${stopsHtml}
       </div>
     </div>`;
 }
 
 const reinforceSVG = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83"/></svg>`;
 
-function renderDepartureGrid(items, extraClass) {
-  return `<div class="departure-grid">
+function isTimePassed(timeStr) {
+  const match = timeStr.match(/^(\d{1,2}):(\d{2})$/);
+  if (!match) return false;
+  const now = new Date();
+  const nowMins = now.getHours() * 60 + now.getMinutes();
+  return parseInt(match[1]) * 60 + parseInt(match[2]) < nowMins;
+}
+
+function renderDepartureList(items, extraClass) {
+  return `<div class="departure-list">
     ${items
       .map(
-        (d) => `
-      <div class="dep-chip ${extraClass || ""} ${d.note ? "dep-chip--reinforce" : ""}">
-        <span class="dep-chip-time">${esc(d.time)}</span>
-        ${d.note ? `<span class="dep-chip-note">${esc(d.note)}</span>` : ""}
-      </div>
-    `,
+        (d) => {
+          const passed = isTimePassed(d.time) ? " dep-time-passed" : "";
+          return `<span class="dep-time-item ${extraClass || ""} ${d.note ? "dep-time-item--reinforce" : ""}${passed}">${esc(d.time)}</span>`;
+        },
       )
       .join("")}
   </div>`;
@@ -1891,23 +1861,23 @@ function renderDepartureTable(departures, filterReinforcement, split) {
     let html = "";
     if (regular.length > 0) {
       html += `
-        <div class="card-block times-block">
+        <div class="card-block times-block-compact">
           <div class="card-block-header static">
             <div class="card-block-title">${clockSVG} שעות יציאה</div>
           </div>
-          ${renderDepartureGrid(regular)}
+          ${renderDepartureList(regular)}
         </div>`;
     }
     if (reinforce.length > 0) {
       const reinforceOpen = isReinforcementDay() ? " open" : "";
       html += `
-        <div class="card-block times-block times-block--reinforce${reinforceOpen}" onclick="this.classList.toggle('open')">
+        <div class="card-block times-block-compact times-block--reinforce${reinforceOpen}" onclick="this.classList.toggle('open')">
           <div class="card-block-header reinforce-header">
             <div class="card-block-title">${reinforceSVG} תגבור ראשון וחמישי</div>
             <div class="card-block-meta">${smallChevronSVG}</div>
           </div>
           <div class="card-block-body">
-            ${renderDepartureGrid(reinforce, "dep-chip--reinforce")}
+            ${renderDepartureList(reinforce, "dep-time-item--reinforce")}
           </div>
         </div>`;
     }
@@ -1923,29 +1893,28 @@ function renderDepartureTable(departures, filterReinforcement, split) {
   if (filtered.length === 0) return '<div class="no-data">אין שעות יציאה</div>';
 
   return `
-    <div class="card-block times-block">
+    <div class="card-block times-block-compact">
       <div class="card-block-header static">
         <div class="card-block-title">${clockSVG} שעות יציאה</div>
       </div>
-      ${renderDepartureGrid(filtered)}
+      ${renderDepartureList(filtered)}
     </div>`;
 }
 
 function renderDepartureTimesStr(timesStr) {
   const times = timesStr.split("-");
   return `
-    <div class="card-block times-block">
+    <div class="card-block times-block-compact">
       <div class="card-block-header static">
         <div class="card-block-title">${clockSVG} שעות יציאה</div>
       </div>
-      <div class="departure-grid">
+      <div class="departure-list">
         ${times
           .map(
-            (t) => `
-          <div class="dep-chip">
-            <span class="dep-chip-time">${esc(t)}</span>
-          </div>
-        `,
+            (t) => {
+              const passed = isTimePassed(t.trim()) ? " dep-time-passed" : "";
+              return `<span class="dep-time-item${passed}">${esc(t)}</span>`;
+            },
           )
           .join("")}
       </div>
@@ -1960,10 +1929,6 @@ function renderRouteCard(route, opts) {
 
   let bodyHtml = "";
 
-  if (route.stops && !hideStops) {
-    bodyHtml += renderStopsCard(route.stops);
-  }
-
   if (route.departure_times) {
     bodyHtml += renderDepartureTable(
       route.departure_times,
@@ -1974,6 +1939,10 @@ function renderRouteCard(route, opts) {
 
   if (route.departure_times_str) {
     bodyHtml += renderDepartureTimesStr(route.departure_times_str);
+  }
+
+  if (route.stops && !hideStops) {
+    bodyHtml += renderStopsCard(route.stops);
   }
 
   if (route.note) {
@@ -2050,33 +2019,18 @@ function getAllDepartureTimes(route) {
   return times;
 }
 
-function getNextDeparture(route) {
+function getUpcomingDepartures(route) {
   const now = new Date();
   const nowMins = now.getHours() * 60 + now.getMinutes();
   const times = getAllDepartureTimes(route);
-
-  // Parse and sort all valid times
-  const parsed = [];
-  times.forEach((t) => {
-    const match = t.match(/^(\d{1,2}):(\d{2})$/);
-    if (!match) return;
-    const mins = parseInt(match[1]) * 60 + parseInt(match[2]);
-    parsed.push({ time: t, mins });
-  });
-  parsed.sort((a, b) => a.mins - b.mins);
-
-  // Find next departure (>= 0 means "right now" counts)
-  for (const p of parsed) {
-    const diff = p.mins - nowMins;
-    if (diff >= 0) return { time: p.time, minutes: diff };
-  }
-
-  return null;
+  return getUpcomingFromTimes(times, nowMins);
 }
 
-function getNextDepartureFromTimes(times) {
-  const now = new Date();
-  const nowMins = now.getHours() * 60 + now.getMinutes();
+function getUpcomingFromTimes(times, nowMins) {
+  if (nowMins === undefined) {
+    const now = new Date();
+    nowMins = now.getHours() * 60 + now.getMinutes();
+  }
   const parsed = [];
   times.forEach((t) => {
     const match = t.match(/^(\d{1,2}):(\d{2})$/);
@@ -2085,32 +2039,56 @@ function getNextDepartureFromTimes(times) {
     parsed.push({ time: t, mins });
   });
   parsed.sort((a, b) => a.mins - b.mins);
+  const upcoming = [];
   for (const p of parsed) {
     const diff = p.mins - nowMins;
-    if (diff >= 0) return { time: p.time, minutes: diff };
+    if (diff >= 0 && diff <= 120) {
+      upcoming.push({ time: p.time, minutes: diff });
+    }
   }
-  return null;
+  return upcoming;
 }
 
 function renderCountdownBanner(route) {
-  const next = getNextDeparture(route);
-  return renderCountdownFromNext(next);
+  const upcoming = getUpcomingDepartures(route);
+  return renderCountdownFromUpcoming(upcoming);
 }
 
 function renderCountdownFromNext(next) {
-  if (!next || next.minutes > 60) {
-    return "";
-  }
-  if (next.minutes === 0) {
-    return `<div class="countdown-banner countdown-urgent">
-      <div class="cb-primary"><span class="live-dot urgent"></span><span class="cb-minutes">עכשיו!</span></div>
-      <div class="cb-secondary">יציאה משוערת בשעה ${next.time}</div>
+  // Backwards compat wrapper
+  if (!next) return "";
+  return renderCountdownFromUpcoming([next]);
+}
+
+function formatMinutes(mins) {
+  if (mins === 0) return "עכשיו!";
+  if (mins <= 60) return mins + " דק׳";
+  const extraMins = mins - 60;
+  if (extraMins === 0) return "שעה";
+  return "שעה ו" + extraMins + " דק׳";
+}
+
+function renderCountdownFromUpcoming(upcoming) {
+  if (!upcoming || upcoming.length === 0) return "";
+
+  const items = upcoming.map((dep) => {
+    const urgent = dep.minutes <= 5;
+    return `<div class="cb-item ${urgent ? "cb-item-urgent" : ""}">
+      <div class="cb-item-row">
+        <span class="live-dot ${urgent ? "urgent" : ""}"></span>
+        <span class="cb-minutes">${formatMinutes(dep.minutes)}</span>
+      </div>
+      <span class="cb-time">${esc(dep.time)}</span>
     </div>`;
-  }
-  const urgent = next.minutes <= 5;
-  return `<div class="countdown-banner ${urgent ? "countdown-urgent" : ""}">
-    <div class="cb-primary"><span class="live-dot ${urgent ? "urgent" : ""}"></span><span class="cb-minutes">${next.minutes} דק׳</span></div>
-    <div class="cb-secondary">יציאה משוערת בשעה ${next.time}</div>
+  }).join("");
+
+  const anyUrgent = upcoming.some((d) => d.minutes <= 5);
+  return `<div class="countdown-banner ${anyUrgent ? "countdown-urgent" : ""}">
+    <div class="cb-label-col">
+      <span class="cb-label">הקווים הקרובים</span>
+      <span class="cb-disclaimer">*זמני היציאה משוערים*</span>
+    </div>
+    <div class="cb-items">${items}</div>
   </div>`;
 }
 
@@ -2123,19 +2101,19 @@ function formatRouteTitle(name) {
   return esc(name);
 }
 
-function renderRouteContent() {
-  const container = document.getElementById("route-content");
+function renderTabContent() {
+  const container = document.getElementById("tab-content");
   let html = "";
 
-  if (activeRoute === "train") {
+  if (activeTab === "train") {
     const toTrain = DATA.bus_routes[0];
     const fromTrain = DATA.bus_routes[1];
     html += renderRouteCard(toTrain, { splitReinforcement: true });
     html += renderRouteCard(fromTrain, { splitReinforcement: true });
-  } else if (activeRoute === "tzomet") {
+  } else if (activeTab === "tzomet") {
     const tzomet = DATA.bus_routes[3];
     html += renderRouteCard(tzomet, { hideEvening: true });
-  } else if (activeRoute === "internal") {
+  } else if (activeTab === "internal") {
     const internal = DATA.bus_routes[2];
     if (internal.note) {
       html += `<div class="route-note top-note">${infoSVG} ${esc(internal.note)}</div>`;
@@ -2145,10 +2123,12 @@ function renderRouteContent() {
         html += renderRouteCard(sub);
       });
     }
-  } else if (activeRoute === "hada") {
+  } else if (activeTab === "hada") {
     html += renderHadaContent();
-  } else if (activeRoute === "oncall") {
+  } else if (activeTab === "oncall") {
     html += renderOnCallContent();
+  } else if (activeTab === "info") {
+    html += renderInfoContent();
   }
 
   container.innerHTML = html;
@@ -2187,31 +2167,18 @@ function getHadaTrips() {
 function renderHadaCard(title, trips) {
   if (trips.length === 0) return "";
 
-  const timesHtml = trips
-    .map(
-      (t) =>
-        `<div class="dep-chip dep-chip--hada"><span class="dep-chip-time">${esc(t.time)}</span></div>`,
-    )
-    .join("");
-
-  const countdown = renderCountdownFromNext(
-    getNextDepartureFromTimes(trips.map((t) => t.time)),
-  );
+  const upcoming = getUpcomingFromTimes(trips.map((t) => t.time));
+  const countdown = renderCountdownFromUpcoming(upcoming);
 
   let html = `<div class="route-card">
     <div class="route-card-header">
       <div class="route-card-title">${title}</div>
     </div>
     ${countdown}
-    <div class="route-card-body">
-      <div class="card-block times-block">
-        <div class="card-block-header static">
-          <div class="card-block-title">${clockSVG} שעות יציאה</div>
-        </div>
-        <div class="departure-grid">${timesHtml}</div>
-      </div>`;
+    <div class="route-card-body">`;
 
   trips.forEach((trip) => {
+    const passed = isTimePassed(trip.time) ? " trip-passed" : "";
     const stopsHtml = trip.stops
       .map((stop, i) => {
         const hada = isHadaStop(stop) ? " stop-hada" : "";
@@ -2219,7 +2186,7 @@ function renderHadaCard(title, trips) {
       })
       .join("");
     html += `
-      <div class="card-block stops-block" onclick="this.classList.toggle('open')">
+      <div class="card-block stops-block${passed}" onclick="this.classList.toggle('open')">
         <div class="card-block-header">
           <div class="card-block-title">${mapPinSVG} ${esc(trip.time)}</div>
           <div class="card-block-meta">
@@ -2280,30 +2247,15 @@ function renderOnCallContent() {
 }
 
 // ─── Old Routes ───
-const OLD_ROUTE_TABS = OLD_ROUTES.map((r, i) => ({
-  id: `kav${i + 1}`,
-  label: r.name.split(" - ")[0],
-}));
-
 let activeOldRoute = "kav1";
 
-function renderOldRouteTabs() {
-  const container = document.getElementById("oldroute-tabs");
-  container.innerHTML = OLD_ROUTE_TABS.map(
-    (tab) =>
-      `<button class="route-tab ${tab.id === activeOldRoute ? "active" : ""}" data-oldroute="${tab.id}">${esc(tab.label)}</button>`,
-  ).join("");
-
-  container.addEventListener("click", (e) => {
-    const btn = e.target.closest(".route-tab");
-    if (!btn) return;
-    activeOldRoute = btn.dataset.oldroute;
-    container
-      .querySelectorAll(".route-tab")
-      .forEach((t) => t.classList.remove("active"));
-    btn.classList.add("active");
-    renderOldRouteContent();
-  });
+function renderOldRouteTabsHtml() {
+  const tabs = OLD_ROUTES.map((r, i) => {
+    const id = `kav${i + 1}`;
+    const label = r.name.split(" - ")[0];
+    return `<button class="route-tab ${id === activeOldRoute ? "active" : ""}" data-oldroute="${id}">${esc(label)}</button>`;
+  }).join("");
+  return `<div class="route-tabs" id="oldroute-tabs">${tabs}</div>`;
 }
 
 function isHadaStop(name) {
@@ -2359,17 +2311,16 @@ function renderScheduleEntry(entry) {
   return "";
 }
 
-function renderOldRouteContent() {
-  const container = document.getElementById("oldroute-content");
+function renderOldRouteContentHtml() {
   const idx = parseInt(activeOldRoute.replace("kav", "")) - 1;
   const route = OLD_ROUTES[idx];
-  if (!route) return;
+  if (!route) return "";
 
   const scheduleHtml = route.schedule
     .map((entry) => renderScheduleEntry(entry))
     .join("");
 
-  container.innerHTML = `
+  return `
     <div class="route-card">
       <div class="route-card-header">
         <div class="route-card-title">${esc(route.name)}</div>
@@ -2382,6 +2333,51 @@ function renderOldRouteContent() {
     </div>`;
 }
 
+// ─── Info Tab (stations legend + old routes) ───
+function renderInfoContent() {
+  let html = "";
+
+  // Stations legend
+  html += `<div class="info-section">
+    <h2 class="info-section-title">מקרא תחנות הכנף</h2>
+    <div class="legend">
+      <span class="legend-item">
+        <span class="badge badge-service"></span>
+        תחנת שירות - תחנה ששאטל עוצר בה
+      </span>
+      <span class="legend-item">
+        <span class="badge badge-alt"></span>
+        תחנה חלופית - תחנה שממנה נדרש להגיע לתחנת שירות
+      </span>
+    </div>
+    <div class="stations-grid">${renderStationsHtml()}</div>
+  </div>`;
+
+  // Old routes
+  html += `<div class="info-section">
+    <h2 class="info-section-title">קויי שאטל</h2>
+    ${renderOldRouteTabsHtml()}
+    <div id="oldroute-content" class="route-content">${renderOldRouteContentHtml()}</div>
+  </div>`;
+
+  return html;
+}
+
+function attachOldRouteTabListeners() {
+  const container = document.getElementById("oldroute-tabs");
+  if (!container) return;
+  container.addEventListener("click", (e) => {
+    const btn = e.target.closest(".route-tab");
+    if (!btn) return;
+    activeOldRoute = btn.dataset.oldroute;
+    container
+      .querySelectorAll(".route-tab")
+      .forEach((t) => t.classList.remove("active"));
+    btn.classList.add("active");
+    document.getElementById("oldroute-content").innerHTML = renderOldRouteContentHtml();
+  });
+}
+
 // ─── Tab Navigation ───
 function initTabs() {
   const tabs = document.querySelectorAll(".nav-tab");
@@ -2389,12 +2385,9 @@ function initTabs() {
     tab.addEventListener("click", () => {
       tabs.forEach((t) => t.classList.remove("active"));
       tab.classList.add("active");
-      document
-        .querySelectorAll(".panel")
-        .forEach((p) => p.classList.remove("active"));
-      document
-        .getElementById(`${tab.dataset.tab}-panel`)
-        .classList.add("active");
+      activeTab = tab.dataset.tab;
+      renderTabContent();
+      if (activeTab === "info") attachOldRouteTabListeners();
     });
   });
 }
@@ -2402,16 +2395,18 @@ function initTabs() {
 // ─── Countdown Timer ───
 let countdownTimer = null;
 
+function refreshContent() {
+  if (activeTab === "info") return; // info tab has no countdowns
+  renderTabContent();
+}
+
 function startCountdownTimer() {
   stopCountdownTimer();
-  renderRouteContent();
-  // Sync to the next minute boundary so updates happen right when the clock ticks
   const now = new Date();
   const msToNextMinute = (60 - now.getSeconds()) * 1000 - now.getMilliseconds();
   countdownTimer = setTimeout(function tick() {
-    renderRouteContent();
-    // Then repeat every 60s, aligned to the minute
-    countdownTimer = setInterval(() => renderRouteContent(), 60000);
+    refreshContent();
+    countdownTimer = setInterval(refreshContent, 60000);
   }, msToNextMinute);
 }
 
@@ -2423,27 +2418,24 @@ function stopCountdownTimer() {
   }
 }
 
-// Re-render immediately when user returns to the tab (fixes stale data after sleep/background)
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible") {
+    renderTabContent();
+    if (activeTab === "info") attachOldRouteTabListeners();
     startCountdownTimer();
   } else {
     stopCountdownTimer();
   }
 });
 
-// Also handle mobile resume / laptop lid open
 window.addEventListener("focus", () => {
-  renderRouteContent();
+  renderTabContent();
+  if (activeTab === "info") attachOldRouteTabListeners();
 });
 
 // ─── Init ───
 document.addEventListener("DOMContentLoaded", () => {
-  renderStations();
-  renderRouteTabs();
-  renderRouteContent();
-  renderOldRouteTabs();
-  renderOldRouteContent();
+  renderTabContent();
   initTabs();
   startCountdownTimer();
 });

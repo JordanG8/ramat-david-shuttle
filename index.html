@@ -17,45 +17,17 @@
 
   <nav class="main-nav">
     <div class="nav-inner">
-      <button class="nav-tab active" data-tab="routes">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
-        כיווני שאטל
-      </button>
-      <button class="nav-tab" data-tab="oldroutes">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-        קויי שאטל
-      </button>
-      <button class="nav-tab" data-tab="stations">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-        מקרא תחנות הכנף
-      </button>
+      <button class="nav-tab active" data-tab="train">רכבת</button>
+      <button class="nav-tab" data-tab="tzomet">צומת</button>
+      <button class="nav-tab" data-tab="internal">פנים כנף</button>
+      <button class="nav-tab" data-tab="hada">חד"א</button>
+      <button class="nav-tab" data-tab="oncall">לפי קריאה</button>
+      <button class="nav-tab" data-tab="info">מקרא ומידע</button>
     </div>
   </nav>
 
   <main class="content">
-    <section id="stations-panel" class="panel">
-      <div class="legend">
-        <span class="legend-item">
-          <span class="badge badge-service"></span>
-          תחנת שירות - תחנה ששאטל עוצר בה
-        </span>
-        <span class="legend-item">
-          <span class="badge badge-alt"></span>
-          תחנה חלופית - תחנה שממנה נדרש להגיע לתחנת שירות
-        </span>
-      </div>
-      <div id="stations-list" class="stations-grid"></div>
-    </section>
-
-    <section id="routes-panel" class="panel active">
-      <div class="route-tabs" id="route-tabs"></div>
-      <div id="route-content" class="route-content"></div>
-    </section>
-
-    <section id="oldroutes-panel" class="panel">
-      <div class="route-tabs" id="oldroute-tabs"></div>
-      <div id="oldroute-content" class="route-content"></div>
-    </section>
+    <div id="tab-content"></div>
   </main>
 
   <footer class="app-footer">

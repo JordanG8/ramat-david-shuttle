@@ -135,10 +135,12 @@ body::before {
   display: flex;
   max-width: 900px;
   margin: 0 auto;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .nav-tab {
-  flex: 1;
+  flex: 1 0 auto;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -148,12 +150,13 @@ body::before {
   border: none;
   color: var(--olive-300);
   font-family: var(--font-display);
-  font-size: 1rem;
+  font-size: 0.88rem;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.25s ease;
   position: relative;
   letter-spacing: 0.02em;
+  white-space: nowrap;
 }
 
 .nav-tab::after {
@@ -182,9 +185,6 @@ body::before {
   transform: scaleX(1);
 }
 
-.nav-tab svg {
-  flex-shrink: 0;
-}
 
 /* ─── Content ─── */
 .content {
@@ -244,6 +244,21 @@ body::before {
 .badge-alt {
   background: var(--station-yellow);
   box-shadow: 0 0 0 2px var(--station-yellow-border);
+}
+
+/* ─── Info Sections ─── */
+.info-section {
+  margin-bottom: var(--space-2xl);
+}
+
+.info-section-title {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--olive-800);
+  margin: 0 0 var(--space-md);
+  padding-bottom: var(--space-sm);
+  border-bottom: 2px solid var(--olive-200);
 }
 
 /* ─── Stations Grid ─── */
@@ -704,48 +719,88 @@ body::before {
 /* ─── Countdown Banner ─── */
 .countdown-banner {
   display: flex;
-  align-items: stretch;
+  align-items: center;
   color: #fff;
   font-family: var(--font-body);
   overflow: hidden;
+  background: #b71c1c;
 }
 
-.cb-primary {
+.cb-label-col {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 8px 12px;
+  gap: 2px;
+}
+
+.cb-label {
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+  line-height: 1.2;
+}
+
+.cb-disclaimer {
+  font-size: 0.6rem;
+  font-weight: 500;
+  opacity: 0.7;
+  font-style: italic;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+.cb-items {
   display: flex;
   align-items: center;
-  gap: var(--space-sm);
-  padding: 8px var(--space-md);
-  background: #b71c1c;
-  flex-shrink: 0;
+  flex: 1;
+  padding: 0 4px;
+  border-right: 2px solid rgba(255,255,255,0.35);
+}
+
+.cb-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 10px;
+}
+
+.cb-item + .cb-item {
+  border-right: 2px solid rgba(255,255,255,0.35);
+}
+
+.cb-item-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cb-item-urgent .live-dot {
+  animation: livePulseUrgent 0.8s ease-in-out infinite;
 }
 
 .cb-minutes {
   font-family: var(--font-display);
-  font-size: 1.1rem;
+  font-size: 1rem;
   font-weight: 900;
   white-space: nowrap;
   letter-spacing: -0.02em;
+  line-height: 1;
 }
 
-.cb-secondary {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex: 1;
-  padding: 8px var(--space-md);
-  background: var(--accent);
-  font-size: 0.8rem;
+.cb-time {
+  font-size: 0.65rem;
   font-weight: 500;
-  text-align: center;
+  opacity: 0.7;
+  direction: ltr;
+  line-height: 1;
 }
 
 /* Done state */
-.countdown-banner.countdown-done .cb-primary {
+.countdown-banner.countdown-done {
   background: var(--gray-700);
-}
-
-.countdown-banner.countdown-done .cb-secondary {
-  background: var(--gray-600);
 }
 
 .countdown-banner.countdown-done .cb-minutes {
@@ -753,7 +808,7 @@ body::before {
 }
 
 /* Urgent state (<=5 min) */
-.countdown-banner.countdown-urgent .cb-primary {
+.countdown-banner.countdown-urgent {
   animation: urgentBg 1.5s ease-in-out infinite;
 }
 
@@ -979,6 +1034,50 @@ body::before {
   margin-top: 2px;
 }
 
+/* ─── Compact Departure List ─── */
+.times-block-compact {
+  border-top: 1px solid var(--border);
+}
+
+.departure-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  padding: var(--space-sm) var(--space-md) var(--space-md);
+}
+
+.dep-time-item {
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--olive-700);
+  direction: ltr;
+  padding: 2px 8px;
+  background: var(--olive-50);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--olive-100);
+}
+
+.dep-time-item--reinforce {
+  color: #e65100;
+  background: var(--station-yellow-bg);
+  border-color: var(--station-yellow-border);
+}
+
+.dep-time-passed {
+  opacity: 0.35;
+  text-decoration: line-through;
+}
+
+.trip-passed {
+  opacity: 0.4;
+}
+
+/* ─── Static Stops Block ─── */
+.stops-block-static .stops-list {
+  padding: var(--space-sm) var(--space-md) var(--space-md);
+}
+
 /* ─── Route Notes ─── */
 .route-note {
   padding: var(--space-sm) var(--space-md);
@@ -1136,14 +1235,9 @@ body::before {
   }
 
   .nav-tab {
-    font-size: 0.78rem;
-    padding: var(--space-sm) var(--space-sm);
-    gap: 4px;
-  }
-
-  .nav-tab svg {
-    width: 16px;
-    height: 16px;
+    font-size: 0.72rem;
+    padding: var(--space-sm) var(--space-md);
+    gap: 2px;
   }
 
   .timeline {
