@@ -458,7 +458,8 @@ const ROUTE_TABS = [
   { id: "train", label: "רכבת כפר יהושוע" },
   { id: "tzomet", label: "צומת רמת דוד" },
   { id: "internal", label: "פנים כנף" },
-  { id: "hada", label: "חד\"א" }
+  { id: "hada", label: "חד\"א" },
+  { id: "oncall", label: "שאטל לפי קריאה" }
 ];
 
 let activeRoute = "train";
@@ -608,7 +609,7 @@ function renderRouteCard(route, opts) {
     bodyHtml += `<div class="route-note">${infoSVG} ${esc(route.note)}</div>`;
   }
 
-  if (route.evening) {
+  if (route.evening && !opts.hideEvening) {
     bodyHtml += `
       <div class="card-block evening-block">
         <div class="card-block-header static">
@@ -752,7 +753,7 @@ function renderRouteContent() {
 
   else if (activeRoute === 'tzomet') {
     const tzomet = DATA.bus_routes[3];
-    html += renderRouteCard(tzomet);
+    html += renderRouteCard(tzomet, { hideEvening: true });
   }
 
   else if (activeRoute === 'internal') {
@@ -769,6 +770,10 @@ function renderRouteContent() {
 
   else if (activeRoute === 'hada') {
     html += renderHadaContent();
+  }
+
+  else if (activeRoute === 'oncall') {
+    html += renderOnCallContent();
   }
 
   html += renderCTA();
@@ -888,6 +893,66 @@ function renderHadaContent() {
     });
 
     html += `</div></div>`;
+  }
+
+  return html;
+}
+
+// ─── On-Call Shuttle ───
+function renderOnCallContent() {
+  let html = '';
+  const tzomet = DATA.bus_routes[3];
+
+  // Evening hours from tzomet route
+  if (tzomet.evening) {
+    html += `<div class="route-card">
+      <div class="route-card-header">
+        <div class="route-card-title">שאטל לפי קריאה - ערב</div>
+      </div>
+      <div class="route-card-body">
+        <div class="card-block evening-block">
+          <div class="card-block-header static">
+            <div class="card-block-title">${moonSVG} שעות פעילות</div>
+          </div>
+          <div class="evening-info">
+            <div class="dep-chip dep-chip--evening">
+              <span class="dep-chip-time">${esc(tzomet.evening.time)}</span>
+            </div>
+            <div class="evening-note">${esc(tzomet.evening.break)}</div>
+          </div>
+        </div>
+        <div class="route-note">${infoSVG} איסוף ע"פ קריאה מול מוצב מנהלה</div>
+      </div>
+    </div>`;
+  }
+
+  // Morning on-call pickups from old routes
+  const onCallEntries = [];
+  OLD_ROUTES.forEach(route => {
+    const routeLabel = route.name.split(' - ')[0];
+    route.schedule.forEach(entry => {
+      if (entry.type === 'איסוף') {
+        onCallEntries.push({ time: entry.time, description: entry.description, source: routeLabel });
+      }
+    });
+  });
+
+  if (onCallEntries.length > 0) {
+    let entriesHtml = onCallEntries.map(e => `
+      <div class="sched-entry sched-pickup">
+        <span class="sched-time">${esc(e.time)}</span>
+        <span class="sched-type-badge sched-badge-pickup">${esc(e.source)}</span>
+        ${e.description ? `<span class="sched-desc">${esc(e.description)}</span>` : ''}
+      </div>`).join('');
+
+    html += `<div class="route-card">
+      <div class="route-card-header">
+        <div class="route-card-title">איסוף לפי קריאה - שעות נוספות</div>
+      </div>
+      <div class="route-card-body">
+        <div class="schedule-timeline">${entriesHtml}</div>
+      </div>
+    </div>`;
   }
 
   return html;
