@@ -1136,8 +1136,14 @@ body::before {
   }
 
   .nav-tab {
-    font-size: 0.88rem;
-    padding: var(--space-sm) var(--space-md);
+    font-size: 0.78rem;
+    padding: var(--space-sm) var(--space-sm);
+    gap: 4px;
+  }
+
+  .nav-tab svg {
+    width: 16px;
+    height: 16px;
   }
 
   .timeline {
@@ -1155,6 +1161,181 @@ body::before {
   .timeline::before {
     right: 11px;
   }
+}
+
+/* ─── חד"א Chips ─── */
+.dep-chip--hada {
+  border-color: var(--olive-200);
+  background: var(--surface);
+}
+
+/* ─── Schedule Timeline (Old Routes) ─── */
+.schedule-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sched-entry {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-sm);
+  transition: background 0.15s ease;
+}
+
+.sched-entry:hover {
+  background: var(--gray-50);
+}
+
+.sched-time {
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--olive-800);
+  min-width: 70px;
+  direction: ltr;
+  text-align: center;
+  flex-shrink: 0;
+  background: var(--olive-50);
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+}
+
+.sched-type-badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 2px 10px;
+  border-radius: 100px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.sched-badge-trip {
+  background: var(--olive-100);
+  color: var(--olive-700);
+}
+
+.sched-badge-pickup {
+  background: #e3f2fd;
+  color: #1565c0;
+}
+
+.sched-badge-break {
+  background: var(--gray-100);
+  color: var(--gray-500);
+}
+
+.sched-badge-end {
+  background: #ffebee;
+  color: var(--accent);
+}
+
+.sched-desc {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.sched-stop-count {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-inline-start: auto;
+}
+
+.sched-break {
+  background: var(--gray-50);
+  border: 1px dashed var(--gray-300);
+}
+
+.sched-break:hover {
+  background: var(--gray-100);
+}
+
+.sched-end {
+  background: #ffebee;
+  border: 1px solid #ef9a9a;
+}
+
+.sched-end:hover {
+  background: #fce4ec;
+}
+
+.sched-pickup {
+  background: #e3f2fd;
+  border: 1px solid #90caf9;
+}
+
+.sched-pickup:hover {
+  background: #bbdefb;
+}
+
+/* Trip entry - collapsible */
+.sched-trip {
+  flex-direction: column;
+  align-items: stretch;
+  padding: 0;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.sched-trip:hover {
+  background: var(--surface);
+}
+
+.sched-trip-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s ease;
+}
+
+.sched-trip-header:hover {
+  background: var(--olive-50);
+}
+
+.sched-trip-header .tl-chevron {
+  transition: transform 0.3s ease;
+  margin-inline-start: var(--space-xs);
+}
+
+.sched-trip.open .sched-trip-header .tl-chevron {
+  transform: rotate(180deg);
+}
+
+.sched-trip-stops {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sched-trip.open .sched-trip-stops {
+  max-height: 2000px;
+}
+
+.sched-trip-stops .stops-list {
+  border-top: 1px solid var(--gray-100);
+  padding: var(--space-sm) var(--space-md);
+}
+
+/* Highlight חד"א stops */
+.stop-item.stop-hada {
+  background: var(--olive-50);
+  border-radius: var(--radius-sm);
+  padding: 4px 6px;
+  margin: 2px -6px;
+  border: 1px solid var(--olive-200);
+  font-weight: 600;
+  color: var(--olive-800);
+}
+
+.stop-item.stop-hada .stop-num {
+  background: var(--olive-700);
+  color: #fff;
 }
 
 /* ─── Stagger animations ─── */
