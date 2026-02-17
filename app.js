@@ -347,9 +347,7 @@ function renderStations() {
 const ROUTE_TABS = [
   { id: "train", label: "רכבת כפר יהושוע" },
   { id: "tzomet", label: "צומת רמת דוד" },
-  { id: "dining", label: "חדר אוכל" },
-  { id: "internal", label: "פנים כנף" },
-  { id: "reinforcement", label: "תגבור ראשון וחמישי" }
+  { id: "internal", label: "פנים כנף" }
 ];
 
 let activeRoute = "train";
@@ -646,18 +644,6 @@ function renderRouteContent() {
     html += renderRouteCard(tzomet);
   }
 
-  else if (activeRoute === 'dining') {
-    html += `
-      <div class="route-card">
-        <div class="route-card-header">
-          <div class="route-card-title">שאטל חדר אוכל</div>
-        </div>
-        <div class="route-card-body">
-          <div class="no-data">מידע יתעדכן בקרוב</div>
-        </div>
-      </div>`;
-  }
-
   else if (activeRoute === 'internal') {
     const internal = DATA.bus_routes[2];
     if (internal.note) {
@@ -668,13 +654,6 @@ function renderRouteContent() {
         html += renderRouteCard(sub);
       });
     }
-  }
-
-  else if (activeRoute === 'reinforcement') {
-    const toTrain = DATA.bus_routes[0];
-    const fromTrain = DATA.bus_routes[1];
-    html += renderRouteCard(toTrain, { filterReinforcement: 'only' });
-    html += renderRouteCard(fromTrain, { filterReinforcement: 'only' });
   }
 
   html += renderCTA();
