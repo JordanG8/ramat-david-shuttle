@@ -2221,6 +2221,10 @@ function renderDepartureBoard() {
   const departures = getAllUpcomingDepartures();
 
   let html = `<div class="board-section">`;
+  html += `<div class="board-live-label">
+    <span class="live-dot urgent"></span>
+    <span class="board-live-label-text">יציאות</span>
+  </div>`;
 
   if (departures.length === 0) {
     html += `<div class="board-empty">אין יציאות קרובות</div>`;
@@ -2251,42 +2255,69 @@ function renderNavButtons() {
     {
       icon: '<span class="material-symbols-rounded">train</span>',
       label: "בסיס - רכבת כפר יהושע",
+      sub: "נסיעות לרכבת הגלילים",
       view: "train",
+      iconClass: "nav-btn-icon-wrap--train",
     },
     {
       icon: '<span class="material-symbols-rounded">alt_route</span>',
       label: "צומת - בסיס",
+      sub: "שאטל מהצומת לבסיס",
       view: "tzomet",
+      iconClass: "nav-btn-icon-wrap--tzomet",
     },
     {
       icon: '<span class="material-symbols-rounded">directions_bus</span>',
       label: "פיזור למקומות עבודה",
+      sub: "הסעות פנים בסיס",
       view: "internal",
+      iconClass: "nav-btn-icon-wrap--internal",
     },
     {
       icon: '<span class="material-symbols-rounded">restaurant</span>',
       label: 'חד"א',
+      sub: "נסיעות לחדר האוכל",
       view: "hada",
+      iconClass: "nav-btn-icon-wrap--hada",
     },
     {
       icon: '<span class="material-symbols-rounded">call</span>',
       label: "שאטל לפי קריאה",
+      sub: "הזמנת נסיעה",
       view: "oncall",
+      iconClass: "nav-btn-icon-wrap--oncall",
     },
     {
-      icon: '<span class="material-symbols-rounded">info</span>',
+      icon: '<span class="material-symbols-rounded">map</span>',
       label: "מקרא תחנות ומידע",
+      sub: "מפה ומידע כללי",
       view: "info",
+      iconClass: "nav-btn-icon-wrap--info",
     },
   ];
 
   let html = `<div class="nav-card">`;
-  html += `<h2 class="nav-card-title"><span class="material-symbols-rounded nav-card-title-icon">explore</span>לאן את.ה צריך להגיע?</h2>`;
+  html += `<div class="nav-card-brand">
+    <span class="material-symbols-rounded nav-card-brand-icon">directions_bus</span>
+    <div class="nav-card-brand-text">
+      <div class="nav-card-brand-title">אפליקציית השאטלים</div>
+      <div class="nav-card-brand-sub">בסיס כנף 1 — רמת דוד</div>
+    </div>
+  </div>`;
+  html += `<div class="nav-card-cta">
+    <span class="material-symbols-rounded nav-card-title-icon">explore</span>
+    <h2 class="nav-card-title">לאן את.ה צריך להגיע?</h2>
+  </div>`;
   html += `<div class="nav-buttons">`;
   buttons.forEach((btn) => {
     html += `<div class="nav-btn" onclick="navigateTo('${btn.view}')">
-      <span class="nav-btn-icon">${btn.icon}</span>
-      <span class="nav-btn-label">${esc(btn.label)}</span>
+      <div class="nav-btn-icon-wrap ${btn.iconClass}">
+        <span class="nav-btn-icon">${btn.icon}</span>
+      </div>
+      <div class="nav-btn-text">
+        <span class="nav-btn-label">${esc(btn.label)}</span>
+        <span class="nav-btn-sub">${esc(btn.sub)}</span>
+      </div>
     </div>`;
   });
   html += `</div></div>`;
@@ -2297,7 +2328,6 @@ function renderNavButtons() {
 function renderHomePage() {
   let html = "";
   html += renderDepartureBoard();
-  html += `<div class="home-intro"><div class="home-intro-title">אפליקציית השאטלים של בסיס כנף 1</div><div class="home-intro-sub">שעות יציאה, תחנות, וכל המידע במקום אחד.</div></div>`;
   html += renderNavButtons();
   return html;
 }
