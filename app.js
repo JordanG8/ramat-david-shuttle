@@ -426,12 +426,16 @@ function renderDepartureTable(departures, filterReinforcement, split) {
         </div>`;
     }
     if (reinforce.length > 0) {
+      const reinforceOpen = isReinforcementDay() ? ' open' : '';
       html += `
-        <div class="card-block times-block times-block--reinforce">
-          <div class="card-block-header static reinforce-header">
+        <div class="card-block times-block times-block--reinforce${reinforceOpen}" onclick="this.classList.toggle('open')">
+          <div class="card-block-header reinforce-header">
             <div class="card-block-title">${reinforceSVG} תגבור ראשון וחמישי</div>
+            <div class="card-block-meta">${smallChevronSVG}</div>
           </div>
-          ${renderDepartureGrid(reinforce, 'dep-chip--reinforce')}
+          <div class="card-block-body">
+            ${renderDepartureGrid(reinforce, 'dep-chip--reinforce')}
+          </div>
         </div>`;
     }
     return html;
