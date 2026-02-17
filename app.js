@@ -101,14 +101,22 @@ const DATA = {
       departments: [
         { name: "לשכת כנף 1", type: "תחנה חלופית", goes_to: "רחבת היסעים" },
         { name: "בטיחות", type: "תחנה חלופית", goes_to: "רחבת היסעים" },
-        { name: "משרד סוציולוגית", type: "תחנה חלופית", goes_to: "רחבת היסעים" },
+        {
+          name: "משרד סוציולוגית",
+          type: "תחנה חלופית",
+          goes_to: "רחבת היסעים",
+        },
       ],
     },
     {
       name: "מנהלה",
       station: "רחבת היסעים",
       departments: [
-        { name: "כח אדם חובה/סגל", type: "תחנה חלופית", goes_to: "רחבת היסעים" },
+        {
+          name: "כח אדם חובה/סגל",
+          type: "תחנה חלופית",
+          goes_to: "רחבת היסעים",
+        },
         { name: "לוגיסטיקה", type: "תחנה חלופית", goes_to: "רחבת היסעים" },
         { name: "רבנות", type: "תחנה חלופית", goes_to: "רחבת היסעים" },
         { name: 'רס"ר', type: "תחנה חלופית", goes_to: "רחבת היסעים" },
@@ -1801,7 +1809,9 @@ function renderStationsHtml() {
     .join("");
 }
 
-let activeTab = "train";
+// ─── Hub-and-Spoke State ───
+let currentView = "home"; // "home" | "train" | "tzomet" | "internal" | "hada" | "oncall" | "info"
+let highlightTime = null;
 
 // ─── Icons ───
 const clockSVG = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
@@ -1840,12 +1850,10 @@ function isTimePassed(timeStr) {
 function renderDepartureList(items, extraClass) {
   return `<div class="departure-list">
     ${items
-      .map(
-        (d) => {
-          const passed = isTimePassed(d.time) ? " dep-time-passed" : "";
-          return `<span class="dep-time-item ${extraClass || ""} ${d.note ? "dep-time-item--reinforce" : ""}${passed}">${esc(d.time)}</span>`;
-        },
-      )
+      .map((d) => {
+        const passed = isTimePassed(d.time) ? " dep-time-passed" : "";
+        return `<span class="dep-time-item ${extraClass || ""} ${d.note ? "dep-time-item--reinforce" : ""}${passed}">${esc(d.time)}</span>`;
+      })
       .join("")}
   </div>`;
 }
@@ -1906,12 +1914,10 @@ function renderDepartureTimesStr(timesStr) {
       </div>
       <div class="departure-list">
         ${times
-          .map(
-            (t) => {
-              const passed = isTimePassed(t.trim()) ? " dep-time-passed" : "";
-              return `<span class="dep-time-item${passed}">${esc(t)}</span>`;
-            },
-          )
+          .map((t) => {
+            const passed = isTimePassed(t.trim()) ? " dep-time-passed" : "";
+            return `<span class="dep-time-item${passed}">${esc(t)}</span>`;
+          })
           .join("")}
       </div>
     </div>`;
@@ -2067,16 +2073,18 @@ function formatMinutes(mins) {
 function renderCountdownFromUpcoming(upcoming) {
   if (!upcoming || upcoming.length === 0) return "";
 
-  const items = upcoming.map((dep) => {
-    const urgent = dep.minutes <= 5;
-    return `<div class="cb-item ${urgent ? "cb-item-urgent" : ""}">
+  const items = upcoming
+    .map((dep) => {
+      const urgent = dep.minutes <= 5;
+      return `<div class="cb-item ${urgent ? "cb-item-urgent" : ""}">
       <div class="cb-item-row">
         <span class="live-dot ${urgent ? "urgent" : ""}"></span>
         <span class="cb-minutes">${formatMinutes(dep.minutes)}</span>
       </div>
       <span class="cb-time">${esc(dep.time)}</span>
     </div>`;
-  }).join("");
+    })
+    .join("");
 
   const anyUrgent = upcoming.some((d) => d.minutes <= 5);
   return `<div class="countdown-banner ${anyUrgent ? "countdown-urgent" : ""}">
@@ -2097,19 +2105,240 @@ function formatRouteTitle(name) {
   return esc(name);
 }
 
-function renderTabContent() {
-  const container = document.getElementById("tab-content");
+// ─── Home Page Icons ───
+const homeSVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>`;
+const backArrowSVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>`;
+
+// ─── Get All Upcoming Departures (across all routes) ───
+function getAllUpcomingDepartures() {
+  const now = new Date();
+  const nowMins = now.getHours() * 60 + now.getMinutes();
+  const reinforceDay = isReinforcementDay();
+  const entries = [];
+
+  // Helper: parse "HH:MM" to minutes
+  function parseTime(t) {
+    const m = t.match(/^(\d{1,2}):(\d{2})$/);
+    return m ? parseInt(m[1]) * 60 + parseInt(m[2]) : -1;
+  }
+
+  // Train: bus_routes[0] = to train, bus_routes[1] = from train
+  const toTrain = DATA.bus_routes[0];
+  const fromTrain = DATA.bus_routes[1];
+
+  function addRouteEntries(route, view, routeLabel, badgeClass) {
+    if (route.departure_times) {
+      route.departure_times.forEach((d) => {
+        if (!reinforceDay && isReinforcementTime(d)) return;
+        const mins = parseTime(d.time);
+        if (mins < 0) return;
+        const diff = mins - nowMins;
+        if (diff >= 0 && diff <= 120) {
+          entries.push({
+            time: d.time,
+            mins,
+            diff,
+            view,
+            routeLabel,
+            badgeClass,
+          });
+        }
+      });
+    }
+    if (route.departure_times_str) {
+      route.departure_times_str.split("-").forEach((t) => {
+        t = t.trim();
+        const mins = parseTime(t);
+        if (mins < 0) return;
+        const diff = mins - nowMins;
+        if (diff >= 0 && diff <= 120) {
+          entries.push({ time: t, mins, diff, view, routeLabel, badgeClass });
+        }
+      });
+    }
+  }
+
+  addRouteEntries(toTrain, "train", "בסיס ← רכבת", "board-badge-train");
+  addRouteEntries(fromTrain, "train", "רכבת ← בסיס", "board-badge-train");
+
+  // Tzomet: bus_routes[3]
+  const tzomet = DATA.bus_routes[3];
+  addRouteEntries(tzomet, "tzomet", "צומת ← בסיס", "board-badge-tzomet");
+
+  // Internal: bus_routes[2] has sub_routes
+  const internal = DATA.bus_routes[2];
+  if (internal.sub_routes) {
+    internal.sub_routes.forEach((sub) => {
+      const label = sub.name.includes("105") ? "פנים כנף 105" : "פנים כנף 109";
+      addRouteEntries(sub, "internal", label, "board-badge-internal");
+    });
+  }
+
+  // Hada trips from OLD_ROUTES
+  const hadaGroups = getHadaTrips();
+  for (const key of Object.keys(hadaGroups)) {
+    hadaGroups[key].forEach((trip) => {
+      const mins = parseTime(trip.time);
+      if (mins < 0) return;
+      const diff = mins - nowMins;
+      if (diff >= 0 && diff <= 120) {
+        entries.push({
+          time: trip.time,
+          mins,
+          diff,
+          view: "hada",
+          routeLabel: 'חד"א',
+          badgeClass: "board-badge-hada",
+        });
+      }
+    });
+  }
+
+  // Deduplicate by time+view (same time same route)
+  const seen = new Set();
+  const unique = [];
+  for (const e of entries) {
+    const key = e.time + "|" + e.routeLabel;
+    if (!seen.has(key)) {
+      seen.add(key);
+      unique.push(e);
+    }
+  }
+
+  unique.sort((a, b) => a.mins - b.mins);
+  return unique;
+}
+
+// ─── Check if evening on-call is active ───
+function isEveningOnCallActive() {
+  const now = new Date();
+  const h = now.getHours();
+  return h >= 18 && h < 22;
+}
+
+// ─── Render Departure Board ───
+function renderDepartureBoard() {
+  const departures = getAllUpcomingDepartures();
+
+  let html = `<div class="board-section">`;
+
+  if (departures.length === 0) {
+    html += `<div class="board-empty">אין יציאות קרובות</div>`;
+  } else {
+    html += `<div class="board-items">`;
+    departures.forEach((dep) => {
+      const urgentClass = dep.diff <= 5 ? " board-item-urgent" : "";
+      const dotClass = dep.diff <= 5 ? "urgent" : "";
+      html += `<div class="board-item${urgentClass}" onclick="navigateTo('${dep.view}', { highlightTime: '${dep.time}' })">
+        <span class="board-item-route">${esc(dep.routeLabel)}</span>
+        <div class="board-item-row">
+          <span class="live-dot ${dotClass}"></span>
+          <span class="board-item-mins">${formatMinutes(dep.diff)}</span>
+        </div>
+        <span class="board-item-time">${esc(dep.time)}</span>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  html += `</div>`;
+  return html;
+}
+
+// ─── Render Nav Buttons ───
+function renderNavButtons() {
+  const buttons = [
+    {
+      icon: '<span class="material-symbols-rounded">train</span>',
+      label: "בסיס - רכבת כפר יהושע",
+      view: "train",
+    },
+    {
+      icon: '<span class="material-symbols-rounded">alt_route</span>',
+      label: "צומת - בסיס",
+      view: "tzomet",
+    },
+    {
+      icon: '<span class="material-symbols-rounded">directions_bus</span>',
+      label: "פיזור למקומות עבודה",
+      view: "internal",
+    },
+    {
+      icon: '<span class="material-symbols-rounded">restaurant</span>',
+      label: 'חד"א',
+      view: "hada",
+    },
+    {
+      icon: '<span class="material-symbols-rounded">call</span>',
+      label: "שאטל לפי קריאה",
+      view: "oncall",
+    },
+    {
+      icon: '<span class="material-symbols-rounded">info</span>',
+      label: "מקרא תחנות ומידע",
+      view: "info",
+    },
+  ];
+
+  let html = `<div class="nav-card">`;
+  html += `<h2 class="nav-card-title"><span class="material-symbols-rounded nav-card-title-icon">explore</span>לאן את.ה צריך להגיע?</h2>`;
+  html += `<div class="nav-buttons">`;
+  buttons.forEach((btn) => {
+    html += `<div class="nav-btn" onclick="navigateTo('${btn.view}')">
+      <span class="nav-btn-icon">${btn.icon}</span>
+      <span class="nav-btn-label">${esc(btn.label)}</span>
+    </div>`;
+  });
+  html += `</div></div>`;
+  return html;
+}
+
+// ─── Render Home Page ───
+function renderHomePage() {
+  let html = "";
+  html += renderDepartureBoard();
+  html += `<div class="home-intro"><div class="home-intro-title">אפליקציית השאטלים של בסיס כנף 1</div><div class="home-intro-sub">שעות יציאה, תחנות, וכל המידע במקום אחד.</div></div>`;
+  html += renderNavButtons();
+  return html;
+}
+
+// ─── Render Top Tabs ───
+function renderTopTabs() {
+  const tabs = [
+    { icon: "home", label: "בית", view: "home" },
+    { icon: "train", label: "רכבת", view: "train" },
+    { icon: "alt_route", label: "צומת", view: "tzomet" },
+    { icon: "directions_bus", label: "פנים כנף", view: "internal" },
+    { icon: "restaurant", label: 'חד"א', view: "hada" },
+    { icon: "call", label: "לפי קריאה", view: "oncall" },
+    { icon: "info", label: "מידע", view: "info" },
+  ];
+
+  let html = `<div class="top-tabs">`;
+  tabs.forEach((tab) => {
+    const active = tab.view === currentView ? " top-tab-active" : "";
+    html += `<button class="top-tab${active}" onclick="navigateTo('${tab.view}')">
+      <span class="material-symbols-rounded top-tab-icon">${tab.icon}</span>
+      <span class="top-tab-label">${tab.label}</span>
+    </button>`;
+  });
+  html += `</div>`;
+  return html;
+}
+
+// ─── Render Route Content (for spoke pages) ───
+function renderRouteContent(view) {
   let html = "";
 
-  if (activeTab === "train") {
+  if (view === "train") {
     const toTrain = DATA.bus_routes[0];
     const fromTrain = DATA.bus_routes[1];
     html += renderRouteCard(toTrain, { splitReinforcement: true });
     html += renderRouteCard(fromTrain, { splitReinforcement: true });
-  } else if (activeTab === "tzomet") {
+  } else if (view === "tzomet") {
     const tzomet = DATA.bus_routes[3];
     html += renderRouteCard(tzomet, { hideEvening: true });
-  } else if (activeTab === "internal") {
+  } else if (view === "internal") {
     const internal = DATA.bus_routes[2];
     if (internal.note) {
       html += `<div class="route-note top-note">${infoSVG} ${esc(internal.note)}</div>`;
@@ -2119,15 +2348,64 @@ function renderTabContent() {
         html += renderRouteCard(sub);
       });
     }
-  } else if (activeTab === "hada") {
+  } else if (view === "hada") {
     html += renderHadaContent();
-  } else if (activeTab === "oncall") {
+  } else if (view === "oncall") {
     html += renderOnCallContent();
-  } else if (activeTab === "info") {
+  } else if (view === "info") {
     html += renderInfoContent();
   }
 
-  container.innerHTML = html;
+  return html;
+}
+
+// ─── Navigate To ───
+function navigateTo(view, opts) {
+  opts = opts || {};
+  currentView = view;
+  highlightTime = opts.highlightTime || null;
+  renderCurrentView();
+}
+
+// ─── Render Current View (master renderer) ───
+function renderCurrentView() {
+  const container = document.getElementById("app-content");
+  const nav = document.getElementById("main-nav");
+
+  nav.innerHTML = renderTopTabs();
+
+  if (currentView === "home") {
+    container.parentElement.classList.add("content-home");
+    container.innerHTML = renderHomePage();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  } else {
+    container.parentElement.classList.remove("content-home");
+    container.innerHTML = renderRouteContent(currentView);
+
+    if (currentView === "info") attachOldRouteTabListeners();
+
+    // Highlight specific time if navigating from board
+    if (highlightTime) {
+      requestAnimationFrame(() => {
+        const timeToFind = highlightTime;
+        highlightTime = null;
+        // Find dep-time-item or dep-chip-time matching the time
+        const allTimeEls = container.querySelectorAll(
+          ".dep-time-item, .dep-chip-time, .card-block-title, .sched-time",
+        );
+        for (const el of allTimeEls) {
+          if (el.textContent.trim() === timeToFind) {
+            el.classList.add("dep-time-highlight");
+            el.scrollIntoView({ behavior: "smooth", block: "center" });
+            setTimeout(() => el.classList.remove("dep-time-highlight"), 3000);
+            break;
+          }
+        }
+      });
+    } else {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }
 }
 
 // ─── חד"א (Cafeteria) Direction Data ───
@@ -2139,7 +2417,7 @@ function classifyHadaArea(stops) {
 }
 
 function getHadaTrips() {
-  const groups = { "105": [], "109": [], maintenance: [] };
+  const groups = { 105: [], 109: [], maintenance: [] };
   OLD_ROUTES.forEach((route) => {
     route.schedule.forEach((entry) => {
       if (entry.type !== "נסיעה" || !entry.stops) return;
@@ -2370,21 +2648,8 @@ function attachOldRouteTabListeners() {
       .querySelectorAll(".route-tab")
       .forEach((t) => t.classList.remove("active"));
     btn.classList.add("active");
-    document.getElementById("oldroute-content").innerHTML = renderOldRouteContentHtml();
-  });
-}
-
-// ─── Tab Navigation ───
-function initTabs() {
-  const tabs = document.querySelectorAll(".nav-tab");
-  tabs.forEach((tab) => {
-    tab.addEventListener("click", () => {
-      tabs.forEach((t) => t.classList.remove("active"));
-      tab.classList.add("active");
-      activeTab = tab.dataset.tab;
-      renderTabContent();
-      if (activeTab === "info") attachOldRouteTabListeners();
-    });
+    document.getElementById("oldroute-content").innerHTML =
+      renderOldRouteContentHtml();
   });
 }
 
@@ -2392,8 +2657,8 @@ function initTabs() {
 let countdownTimer = null;
 
 function refreshContent() {
-  if (activeTab === "info") return; // info tab has no countdowns
-  renderTabContent();
+  if (currentView === "info") return;
+  renderCurrentView();
 }
 
 function startCountdownTimer() {
@@ -2416,8 +2681,7 @@ function stopCountdownTimer() {
 
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible") {
-    renderTabContent();
-    if (activeTab === "info") attachOldRouteTabListeners();
+    renderCurrentView();
     startCountdownTimer();
   } else {
     stopCountdownTimer();
@@ -2425,13 +2689,11 @@ document.addEventListener("visibilitychange", () => {
 });
 
 window.addEventListener("focus", () => {
-  renderTabContent();
-  if (activeTab === "info") attachOldRouteTabListeners();
+  renderCurrentView();
 });
 
 // ─── Init ───
 document.addEventListener("DOMContentLoaded", () => {
-  renderTabContent();
-  initTabs();
+  renderCurrentView();
   startCountdownTimer();
 });
