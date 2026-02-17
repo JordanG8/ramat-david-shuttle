@@ -3,17 +3,17 @@
    ═══════════════════════════════════════════ */
 
 :root {
-  /* Olive / Military palette */
-  --olive-900: #1a1f16;
-  --olive-800: #2d3328;
-  --olive-700: #3d4637;
-  --olive-600: #4a5542;
-  --olive-500: #5c6b52;
-  --olive-400: #7a8b6e;
-  --olive-300: #9aab8e;
-  --olive-200: #bccab2;
-  --olive-100: #dce5d6;
-  --olive-50: #f0f4ed;
+  /* Navy palette */
+  --olive-900: #0a1628;
+  --olive-800: #132237;
+  --olive-700: #1c3150;
+  --olive-600: #274068;
+  --olive-500: #355580;
+  --olive-400: #4e7099;
+  --olive-300: #7a9abb;
+  --olive-200: #a8c0d8;
+  --olive-100: #d4e1ee;
+  --olive-50: #edf2f8;
 
   /* Functional */
   --station-green: #2e7d32;
@@ -41,12 +41,12 @@
   --accent-light: #ef5350;
 
   /* Surfaces */
-  --bg: #f3f1ec;
+  --bg: #eef1f5;
   --surface: #ffffff;
   --surface-raised: #ffffff;
   --text: var(--gray-900);
   --text-muted: var(--gray-500);
-  --border: #d6d3cc;
+  --border: #cdd5de;
 
   /* Type */
   --font-display: 'Heebo', sans-serif;
