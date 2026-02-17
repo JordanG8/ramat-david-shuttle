@@ -5,14 +5,10 @@
 const DATA = {
   title: "מקרא תחנות הכנף",
   legend: {
-    תחנת_שירות: "מחלקה שהיא עצמה תחנה (ירוק)",
-    תחנה_חלופית: "מחלקה שנוסעת לתחנה מסוימת (צהוב)",
+    תחנת_שירות: "תחנה ששאטל עוצר בה (ירוק)",
+    תחנה_חלופית: "תחנה שממנה נדרש להגיע לתחנת שירות (צהוב)",
   },
   units: [
-    {
-      name: "כללי",
-      departments: [{ name: "רחבת היסעים", type: "תחנת שירות" }],
-    },
     {
       name: "טייסת 109",
       departments: [
@@ -31,7 +27,6 @@ const DATA = {
       departments: [
         { name: "גף טיסה", type: "תחנת שירות" },
         { name: "גף טכני", type: "תחנת שירות" },
-        { name: 'דת"ק 2', type: "תחנת שירות" },
       ],
     },
     {
@@ -40,6 +35,7 @@ const DATA = {
         { name: 'דת"ק 14', type: "תחנה חלופית", goes_to: 'דת"ק 34' },
         { name: 'דת"ק 9', type: "תחנת שירות" },
         { name: 'דת"ק 7', type: "תחנת שירות" },
+        { name: 'דת"ק 2', type: "תחנת שירות" },
         { name: "גף טיסה", type: "תחנת שירות" },
         { name: "גף טכני", type: "תחנת שירות" },
       ],
@@ -47,7 +43,7 @@ const DATA = {
     {
       name: "טייסת 144",
       departments: [
-        { name: "מפקדה", type: "תחנה חלופית", goes_to: "רחבת הסיעים" },
+        { name: "מפקדה", type: "תחנה חלופית", goes_to: "רחבת היסעים" },
         { name: 'דת"ק 32', type: "תחנת שירות" },
         { name: "בריטניה", type: "תחנת שירות" },
       ],
@@ -56,18 +52,19 @@ const DATA = {
       name: "טייסת 101",
       station: "רחבת היסעים",
       departments: [
-        { name: 'דת"ק 5', type: "תחנת שירות" },
-        { name: 'דת"ק 4', type: "תחנת שירות" },
-        { name: 'דת"ק 3', type: "תחנת שירות" },
-        { name: "גף טיסה", type: "תחנת שירות" },
-        { name: "גף טכני", type: "תחנת שירות" },
+        { name: 'דת"ק 17', type: "תחנת שירות" },
+        { name: 'דת"ק 5', type: "תחנה חלופית", goes_to: "רחבת היסעים" },
+        { name: 'דת"ק 4', type: "תחנה חלופית", goes_to: "רחבת היסעים" },
+        { name: 'דת"ק 3', type: "תחנה חלופית", goes_to: "רחבת היסעים" },
+        { name: "גף טיסה", type: "תחנה חלופית", goes_to: "רחבת היסעים" },
+        { name: "גף טכני", type: "תחנה חלופית", goes_to: "רחבת היסעים" },
       ],
     },
     {
       name: "טייסת תעופה",
       station: "רחבת היסעים",
       departments: [
-        { name: 'דת"ק 17', type: "תחנת שירות" },
+        { name: "מגדל", type: "תחנת שירות" },
         { name: "מפקדה", type: "תחנת שירות" },
         { name: "אבטחת מידע", type: "תחנה חלופית", goes_to: "רחבת היסעים" },
         { name: "אבטחה פיזית", type: "תחנה חלופית", goes_to: "רחבת היסעים" },
@@ -84,7 +81,6 @@ const DATA = {
       name: "בינוי 302",
       station: "רחבת היסעים",
       departments: [
-        { name: "מגדל", type: "תחנת שירות" },
         { name: "מפקדה", type: "תחנה חלופית", goes_to: "רחבת היסעים" },
         { name: "מערכות חשמל", type: "תחנה חלופית", goes_to: "רחבת היסעים" },
         { name: "משאבים/רכב", type: "תחנה חלופית", goes_to: "רחבת היסעים" },
@@ -101,33 +97,31 @@ const DATA = {
     },
     {
       name: "לשכה",
+      station: "רחבת היסעים",
       departments: [
-        { name: "לשכת כנף 1", type: "תחנת שירות" },
-        { name: "בטיחות", type: "תחנת שירות" },
-        { name: "משרד סוציולוגית", type: "תחנת שירות" },
+        { name: "לשכת כנף 1", type: "תחנה חלופית", goes_to: "רחבת היסעים" },
+        { name: "בטיחות", type: "תחנה חלופית", goes_to: "רחבת היסעים" },
+        { name: "משרד סוציולוגית", type: "תחנה חלופית", goes_to: "רחבת היסעים" },
       ],
     },
     {
       name: "מנהלה",
       station: "רחבת היסעים",
       departments: [
-        {
-          name: "כח אדם חובה/סגל",
-          type: "תחנה חלופית",
-          goes_to: "רחבת היסעים",
-        },
-        { name: "לוגיסטיקה", type: "תחנת שירות" },
+        { name: "כח אדם חובה/סגל", type: "תחנה חלופית", goes_to: "רחבת היסעים" },
+        { name: "לוגיסטיקה", type: "תחנה חלופית", goes_to: "רחבת היסעים" },
         { name: "רבנות", type: "תחנה חלופית", goes_to: "רחבת היסעים" },
         { name: 'רס"ר', type: "תחנה חלופית", goes_to: "רחבת היסעים" },
         { name: "רפואה", type: "תחנה חלופית", goes_to: "רחבת היסעים" },
-        { name: "פסיכולוגיה", type: "תחנת שירות" },
+        { name: "פסיכולוגיה", type: "תחנה חלופית", goes_to: "רחבת היסעים" },
         { name: 'שפ"ו', type: "תחנה חלופית", goes_to: "רחבת היסעים" },
         { name: "תזונה", type: "תחנה חלופית", goes_to: "רחבת היסעים" },
       ],
     },
     {
       name: "טייסת תחזוקה",
-      notes: 'רכבות - איסוף מתחנת מערכות, חד"א - מעבר בכלל התחנות',
+      notes: "רכבות - איסוף מתחנת מערכות",
+      notes2: 'חד"א - מעבר בכלל התחנות',
       departments: [
         { name: "מרכז אחזקה", type: "תחנת שירות" },
         { name: "מנועים", type: "תחנה חלופית", goes_to: "רכבות" },
@@ -146,8 +140,8 @@ const DATA = {
   ],
   bus_routes: [
     {
-      name: "רחבת היסעים - כפר יהושע",
-      description: "תחנות עצירה רחבת היסעים - כפר יהושע",
+      name: "לרכבת כפר יהושע",
+      description: "תחנות עצירה לרכבת כפר יהושע",
       stops: [
         "רחבת היסעים",
         "מערכות (איסוף מרכז של תחנות תחזוקה-מפורט במקרא)",
@@ -179,8 +173,8 @@ const DATA = {
       ],
     },
     {
-      name: "רכבת כפר יהושע - רחבת היסעים",
-      description: "תחנות עצירה רכבת כפר יהושע - רחבת היסעים",
+      name: "מרכבת כפר יהושע",
+      description: "תחנות עצירה מרכבת כפר יהושע",
       stops: [
         "רכבת כפר יהושע",
         "גף טכני 109",
@@ -283,7 +277,7 @@ const DATA = {
       description: "שאטל צומת רמת דוד",
       stops: ["צומת רמת דוד", "רחבת היסעים"],
       departure_times_str:
-        "8:30-09:00-09:30-10:00-10:30-11:00-12:10-12:40-13:10-14:10-14:40-15:10-15:40-16:10-16:40",
+        "08:00-8:30-09:00-09:30-10:00-10:30-11:00-12:10-12:40-13:10-14:10-14:40-15:10-15:40-16:10-16:40",
       evening: {
         time: "18:00-22:00",
         break: "הפסקה 20:40-21:00",
@@ -1763,9 +1757,13 @@ function renderStations() {
       const stationBadge = unit.station
         ? `<span class="unit-station-badge">${esc(unit.station)}</span>`
         : "";
-      const noteHtml = unit.notes
-        ? `<div class="unit-note"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>${esc(unit.notes)}</div>`
+      const noteIcon = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`;
+      let noteHtml = unit.notes
+        ? `<div class="unit-note">${noteIcon}${esc(unit.notes)}</div>`
         : "";
+      if (unit.notes2) {
+        noteHtml += `<div class="unit-note">${noteIcon}${esc(unit.notes2)}</div>`;
+      }
 
       const deptsHtml = unit.departments
         .map((dept) => {
@@ -2157,150 +2155,95 @@ function renderRouteContent() {
 }
 
 // ─── חד"א (Cafeteria) Direction Data ───
+function classifyHadaArea(stops) {
+  const s = stops.join(" ");
+  if (s.includes("גף מנועים")) return "maintenance";
+  if (s.includes("גף טיסה 109") || s.includes("גף טכני 109")) return "109";
+  return "105";
+}
+
 function getHadaTrips() {
-  const toHada = [];
-  const fromHada = [];
+  const groups = { "105": [], "109": [], maintenance: [] };
   OLD_ROUTES.forEach((route) => {
-    const routeLabel = route.name.split(" - ")[0];
     route.schedule.forEach((entry) => {
       if (entry.type !== "נסיעה" || !entry.stops) return;
       const first = entry.stops[0];
       const last = entry.stops[entry.stops.length - 1];
-      const firstIsHada = isHadaStop(first);
-      const lastIsHada = isHadaStop(last);
-      if (lastIsHada && !firstIsHada) {
-        toHada.push({
-          time: entry.time,
-          stops: entry.stops,
-          source: routeLabel,
-        });
-      } else if (firstIsHada) {
-        fromHada.push({
-          time: entry.time,
-          stops: entry.stops,
-          source: routeLabel,
-        });
-      }
+      if (!isHadaStop(first) && !isHadaStop(last)) return;
+      const area = classifyHadaArea(entry.stops);
+      groups[area].push({ time: entry.time, stops: entry.stops });
     });
   });
-  // Sort by time
   const parseTime = (t) => {
     const m = t.match(/^(\d{1,2}):(\d{2})$/);
     return m ? parseInt(m[1]) * 60 + parseInt(m[2]) : 9999;
   };
-  toHada.sort((a, b) => parseTime(a.time) - parseTime(b.time));
-  fromHada.sort((a, b) => parseTime(a.time) - parseTime(b.time));
-  return { toHada, fromHada };
+  for (const key of Object.keys(groups)) {
+    groups[key].sort((a, b) => parseTime(a.time) - parseTime(b.time));
+  }
+  return groups;
+}
+
+function renderHadaCard(title, trips) {
+  if (trips.length === 0) return "";
+
+  const timesHtml = trips
+    .map(
+      (t) =>
+        `<div class="dep-chip dep-chip--hada"><span class="dep-chip-time">${esc(t.time)}</span></div>`,
+    )
+    .join("");
+
+  const countdown = renderCountdownFromNext(
+    getNextDepartureFromTimes(trips.map((t) => t.time)),
+  );
+
+  let html = `<div class="route-card">
+    <div class="route-card-header">
+      <div class="route-card-title">${title}</div>
+    </div>
+    ${countdown}
+    <div class="route-card-body">
+      <div class="card-block times-block">
+        <div class="card-block-header static">
+          <div class="card-block-title">${clockSVG} שעות יציאה</div>
+        </div>
+        <div class="departure-grid">${timesHtml}</div>
+      </div>`;
+
+  trips.forEach((trip) => {
+    const stopsHtml = trip.stops
+      .map((stop, i) => {
+        const hada = isHadaStop(stop) ? " stop-hada" : "";
+        return `<div class="stop-item${hada}"><span class="stop-num">${i + 1}</span>${esc(stop)}</div>`;
+      })
+      .join("");
+    html += `
+      <div class="card-block stops-block" onclick="this.classList.toggle('open')">
+        <div class="card-block-header">
+          <div class="card-block-title">${mapPinSVG} ${esc(trip.time)}</div>
+          <div class="card-block-meta">
+            <span class="stop-count-badge">${trip.stops.length} תחנות</span>
+            ${smallChevronSVG}
+          </div>
+        </div>
+        <div class="card-block-body">
+          <div class="stops-list">${stopsHtml}</div>
+        </div>
+      </div>`;
+  });
+
+  html += `</div></div>`;
+  return html;
 }
 
 function renderHadaContent() {
-  const { toHada, fromHada } = getHadaTrips();
+  const groups = getHadaTrips();
   let html = "";
 
-  html += `<div class="route-note top-note">${infoSVG} נסיעות לחד"א ומחד"א מופיעות בקו 1 וקו 2 בשעות הצהריים</div>`;
-
-  // To חד"א card
-  if (toHada.length > 0) {
-    const toTimesHtml = toHada
-      .map(
-        (t) =>
-          `<div class="dep-chip dep-chip--hada"><span class="dep-chip-time">${esc(t.time)}</span><span class="dep-chip-note">${esc(t.source)}</span></div>`,
-      )
-      .join("");
-
-    const toCountdown = renderCountdownFromNext(
-      getNextDepartureFromTimes(toHada.map((t) => t.time)),
-    );
-
-    html += `<div class="route-card">
-      <div class="route-card-header">
-        <div class="route-card-title">איסוף לחד"א ממקומות העבודה</div>
-      </div>
-      ${toCountdown}
-      <div class="route-card-body">
-        <div class="card-block times-block">
-          <div class="card-block-header static">
-            <div class="card-block-title">${clockSVG} שעות יציאה</div>
-          </div>
-          <div class="departure-grid">${toTimesHtml}</div>
-        </div>`;
-
-    // Show stops for each trip (collapsible)
-    toHada.forEach((trip) => {
-      const stopsHtml = trip.stops
-        .map((stop, i) => {
-          const hada = isHadaStop(stop) ? " stop-hada" : "";
-          return `<div class="stop-item${hada}"><span class="stop-num">${i + 1}</span>${esc(stop)}</div>`;
-        })
-        .join("");
-      html += `
-        <div class="card-block stops-block" onclick="this.classList.toggle('open')">
-          <div class="card-block-header">
-            <div class="card-block-title">${mapPinSVG} ${esc(trip.time)} - ${esc(trip.source)}</div>
-            <div class="card-block-meta">
-              <span class="stop-count-badge">${trip.stops.length} תחנות</span>
-              ${smallChevronSVG}
-            </div>
-          </div>
-          <div class="card-block-body">
-            <div class="stops-list">${stopsHtml}</div>
-          </div>
-        </div>`;
-    });
-
-    html += `</div></div>`;
-  }
-
-  // From חד"א card
-  if (fromHada.length > 0) {
-    const fromTimesHtml = fromHada
-      .map(
-        (t) =>
-          `<div class="dep-chip dep-chip--hada"><span class="dep-chip-time">${esc(t.time)}</span><span class="dep-chip-note">${esc(t.source)}</span></div>`,
-      )
-      .join("");
-
-    const fromCountdown = renderCountdownFromNext(
-      getNextDepartureFromTimes(fromHada.map((t) => t.time)),
-    );
-
-    html += `<div class="route-card">
-      <div class="route-card-header">
-        <div class="route-card-title">פיזור מהחד"א חזרה למקומות העבודה</div>
-      </div>
-      ${fromCountdown}
-      <div class="route-card-body">
-        <div class="card-block times-block">
-          <div class="card-block-header static">
-            <div class="card-block-title">${clockSVG} שעות יציאה</div>
-          </div>
-          <div class="departure-grid">${fromTimesHtml}</div>
-        </div>`;
-
-    fromHada.forEach((trip) => {
-      const stopsHtml = trip.stops
-        .map((stop, i) => {
-          const hada = isHadaStop(stop) ? " stop-hada" : "";
-          return `<div class="stop-item${hada}"><span class="stop-num">${i + 1}</span>${esc(stop)}</div>`;
-        })
-        .join("");
-      html += `
-        <div class="card-block stops-block" onclick="this.classList.toggle('open')">
-          <div class="card-block-header">
-            <div class="card-block-title">${mapPinSVG} ${esc(trip.time)} - ${esc(trip.source)}</div>
-            <div class="card-block-meta">
-              <span class="stop-count-badge">${trip.stops.length} תחנות</span>
-              ${smallChevronSVG}
-            </div>
-          </div>
-          <div class="card-block-body">
-            <div class="stops-list">${stopsHtml}</div>
-          </div>
-        </div>`;
-    });
-
-    html += `</div></div>`;
-  }
+  html += renderHadaCard('חד"א - כיוון 105', groups["105"]);
+  html += renderHadaCard('חד"א - כיוון 109', groups["109"]);
+  html += renderHadaCard('חד"א - טייסת תחזוקה', groups.maintenance);
 
   return html;
 }
