@@ -703,8 +703,30 @@ function getNextDeparture(route) {
   return null;
 }
 
+function getNextDepartureFromTimes(times) {
+  const now = new Date();
+  const nowMins = now.getHours() * 60 + now.getMinutes();
+  const parsed = [];
+  times.forEach(t => {
+    const match = t.match(/^(\d{1,2}):(\d{2})$/);
+    if (!match) return;
+    const mins = parseInt(match[1]) * 60 + parseInt(match[2]);
+    parsed.push({ time: t, mins });
+  });
+  parsed.sort((a, b) => a.mins - b.mins);
+  for (const p of parsed) {
+    const diff = p.mins - nowMins;
+    if (diff >= 0) return { time: p.time, minutes: diff };
+  }
+  return null;
+}
+
 function renderCountdownBanner(route) {
   const next = getNextDeparture(route);
+  return renderCountdownFromNext(next);
+}
+
+function renderCountdownFromNext(next) {
   if (!next || next.minutes > 60) {
     return '';
   }
@@ -818,10 +840,13 @@ function renderHadaContent() {
       `<div class="dep-chip dep-chip--hada"><span class="dep-chip-time">${esc(t.time)}</span><span class="dep-chip-note">${esc(t.source)}</span></div>`
     ).join('');
 
+    const toCountdown = renderCountdownFromNext(getNextDepartureFromTimes(toHada.map(t => t.time)));
+
     html += `<div class="route-card">
       <div class="route-card-header">
         <div class="route-card-title">איסוף לחד"א ממקומות העבודה</div>
       </div>
+      ${toCountdown}
       <div class="route-card-body">
         <div class="card-block times-block">
           <div class="card-block-header static">
@@ -860,10 +885,13 @@ function renderHadaContent() {
       `<div class="dep-chip dep-chip--hada"><span class="dep-chip-time">${esc(t.time)}</span><span class="dep-chip-note">${esc(t.source)}</span></div>`
     ).join('');
 
+    const fromCountdown = renderCountdownFromNext(getNextDepartureFromTimes(fromHada.map(t => t.time)));
+
     html += `<div class="route-card">
       <div class="route-card-header">
         <div class="route-card-title">פיזור מהחד"א חזרה למקומות העבודה</div>
       </div>
+      ${fromCountdown}
       <div class="route-card-body">
         <div class="card-block times-block">
           <div class="card-block-header static">
@@ -922,35 +950,6 @@ function renderOnCallContent() {
           </div>
         </div>
         <div class="route-note">${infoSVG} איסוף ע"פ קריאה מול מוצב מנהלה</div>
-      </div>
-    </div>`;
-  }
-
-  // Morning on-call pickups from old routes
-  const onCallEntries = [];
-  OLD_ROUTES.forEach(route => {
-    const routeLabel = route.name.split(' - ')[0];
-    route.schedule.forEach(entry => {
-      if (entry.type === 'איסוף') {
-        onCallEntries.push({ time: entry.time, description: entry.description, source: routeLabel });
-      }
-    });
-  });
-
-  if (onCallEntries.length > 0) {
-    let entriesHtml = onCallEntries.map(e => `
-      <div class="sched-entry sched-pickup">
-        <span class="sched-time">${esc(e.time)}</span>
-        <span class="sched-type-badge sched-badge-pickup">${esc(e.source)}</span>
-        ${e.description ? `<span class="sched-desc">${esc(e.description)}</span>` : ''}
-      </div>`).join('');
-
-    html += `<div class="route-card">
-      <div class="route-card-header">
-        <div class="route-card-title">איסוף לפי קריאה - שעות נוספות</div>
-      </div>
-      <div class="route-card-body">
-        <div class="schedule-timeline">${entriesHtml}</div>
       </div>
     </div>`;
   }
