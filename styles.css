@@ -807,15 +807,7 @@ body::before {
   font-size: 0.9rem;
 }
 
-/* Urgent state (<=5 min) */
-.countdown-banner.countdown-urgent {
-  animation: urgentBg 1.5s ease-in-out infinite;
-}
-
-@keyframes urgentBg {
-  0%, 100% { background: #b71c1c; }
-  50% { background: #880e0e; }
-}
+/* Urgent dot handled by .live-dot.urgent animation */
 
 /* countdown-now reuses countdown-urgent styling (no green) */
 

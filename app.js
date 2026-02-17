@@ -124,15 +124,15 @@ const DATA = {
       notes2: 'חד"א - מעבר בכלל התחנות',
       departments: [
         { name: "מרכז אחזקה", type: "תחנת שירות" },
-        { name: "מנועים", type: "תחנה חלופית", goes_to: "רכבות" },
-        { name: "מערכות", type: "תחנה חלופית", goes_to: "רכבות" },
-        { name: "מוסכים א/ב", type: "תחנה חלופית", goes_to: "רכבות" },
-        { name: "אוהד", type: "תחנה חלופית", goes_to: "רכבות" },
-        { name: 'גל"א', type: "תחנה חלופית", goes_to: "רכבות" },
-        { name: "אוויוניקה", type: "תחנה חלופית", goes_to: "רכבות" },
-        { name: "מבנה", type: "תחנה חלופית", goes_to: "רכבות" },
-        { name: "תקשוב", type: "תחנה חלופית", goes_to: "רכבות" },
-        { name: "חילוץ", type: "תחנה חלופית", goes_to: "רכבות" },
+        { name: "מנועים", type: "תחנה חלופית" },
+        { name: "מערכות", type: "תחנה חלופית" },
+        { name: "מוסכים א/ב", type: "תחנה חלופית" },
+        { name: "אוהד", type: "תחנה חלופית" },
+        { name: 'גל"א', type: "תחנה חלופית" },
+        { name: "אוויוניקה", type: "תחנה חלופית" },
+        { name: "מבנה", type: "תחנה חלופית" },
+        { name: "תקשוב", type: "תחנה חלופית" },
+        { name: "חילוץ", type: "תחנה חלופית" },
         { name: 'נשמ"ת', type: "תחנת שירות" },
         { name: "מרכז בידונים", type: "תחנת שירות" },
       ],
@@ -140,8 +140,8 @@ const DATA = {
   ],
   bus_routes: [
     {
-      name: "לרכבת כפר יהושע",
-      description: "תחנות עצירה לרכבת כפר יהושע",
+      name: "בסיס - רכבת",
+      description: "תחנות עצירה מהבסיס לרכבת",
       stops: [
         "רחבת היסעים",
         "מערכות (איסוף מרכז של תחנות תחזוקה-מפורט במקרא)",
@@ -173,8 +173,8 @@ const DATA = {
       ],
     },
     {
-      name: "מרכבת כפר יהושע",
-      description: "תחנות עצירה מרכבת כפר יהושע",
+      name: "רכבת - בסיס",
+      description: "תחנות עצירה מהרכבת לבסיס",
       stops: [
         "רכבת כפר יהושע",
         "גף טכני 109",
@@ -273,8 +273,8 @@ const DATA = {
       ],
     },
     {
-      name: "שאטל צומת רמת דוד",
-      description: "שאטל צומת רמת דוד",
+      name: "צומת - בסיס",
+      description: "שאטל צומת רמת דוד לבסיס",
       stops: ["צומת רמת דוד", "רחבת היסעים"],
       departure_times_str:
         "08:00-8:30-09:00-09:30-10:00-10:30-11:00-12:10-12:40-13:10-14:10-14:40-15:10-15:40-16:10-16:40",
@@ -1753,9 +1753,6 @@ function renderStationsHtml() {
   return DATA.units
     .map((unit) => {
       const deptCount = unit.departments.length;
-      const stationBadge = unit.station
-        ? `<span class="unit-station-badge">${esc(unit.station)}</span>`
-        : "";
       const noteIcon = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`;
       let noteHtml = unit.notes
         ? `<div class="unit-note">${noteIcon}${esc(unit.notes)}</div>`
@@ -1788,7 +1785,6 @@ function renderStationsHtml() {
           <div class="unit-title">
             ${esc(unit.name)}
             <span class="unit-count">${deptCount}</span>
-            ${stationBadge}
           </div>
           <div class="unit-meta">
             ${chevronSVG}
