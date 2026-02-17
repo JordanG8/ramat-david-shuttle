@@ -1002,6 +1002,47 @@ body::before {
   margin-bottom: var(--space-md);
 }
 
+/* ─── CTA Banner ─── */
+.route-cta {
+  margin-top: var(--space-lg);
+  padding: var(--space-md) var(--space-lg);
+  text-align: center;
+  background: var(--olive-800);
+  border: 1px solid var(--olive-700);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.route-cta-text {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.route-cta-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #fff;
+  text-decoration: none;
+  direction: ltr;
+}
+
+.route-cta-link:active {
+  opacity: 0.7;
+}
+
+.route-cta-sub {
+  font-size: 0.78rem;
+  color: var(--olive-200);
+  font-weight: 400;
+}
+
 /* ─── Evening Block ─── */
 .evening-info {
   padding: var(--space-sm) var(--space-md) var(--space-md);
