@@ -762,14 +762,7 @@ body::before {
   50% { background: #880e0e; }
 }
 
-/* Now state */
-.countdown-banner.countdown-now .cb-primary {
-  background: #1b5e20;
-}
-
-.countdown-banner.countdown-now .cb-secondary {
-  background: #2e7d32;
-}
+/* countdown-now reuses countdown-urgent styling (no green) */
 
 /* ─── Live Dot ─── */
 .live-dot {

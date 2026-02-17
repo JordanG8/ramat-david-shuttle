@@ -276,7 +276,7 @@ const DATA = {
       "departure_times_str": "8:30-09:00-09:30-10:00-10:30-11:00-12:10-12:40-13:10-14:10-14:40-15:10-15:40-16:10-16:40",
       "evening": {
         "time": "18:00-22:00",
-        "break": "הפסקה מחדשנה 20:40-21:00"
+        "break": "הפסקה 20:40-21:00"
       }
     }
   ]
@@ -527,10 +527,24 @@ function renderRouteCard(route, opts) {
     </div>`;
 }
 
+function isReinforcementDay() {
+  const day = new Date().getDay(); // 0=Sun, 4=Thu
+  return day === 0 || day === 4;
+}
+
+function isReinforcementTime(d) {
+  return d.note && d.note.includes('ראשון');
+}
+
 function getAllDepartureTimes(route) {
   const times = [];
+  const reinforceDay = isReinforcementDay();
   if (route.departure_times) {
-    route.departure_times.forEach(d => times.push(d.time));
+    route.departure_times.forEach(d => {
+      // Skip reinforcement-only times if today isn't Sunday/Thursday
+      if (!reinforceDay && isReinforcementTime(d)) return;
+      times.push(d.time);
+    });
   }
   if (route.departure_times_str) {
     route.departure_times_str.split('-').forEach(t => times.push(t.trim()));
@@ -541,7 +555,10 @@ function getAllDepartureTimes(route) {
         sub.departure_times_str.split('-').forEach(t => times.push(t.trim()));
       }
       if (sub.departure_times) {
-        sub.departure_times.forEach(d => times.push(d.time));
+        sub.departure_times.forEach(d => {
+          if (!reinforceDay && isReinforcementTime(d)) return;
+          times.push(d.time);
+        });
       }
     });
   }
@@ -574,14 +591,11 @@ function getNextDeparture(route) {
 
 function renderCountdownBanner(route) {
   const next = getNextDeparture(route);
-  if (!next) {
-    return `<div class="countdown-banner countdown-done">
-      <div class="cb-primary"><span class="live-dot dead"></span><span class="cb-minutes">—</span></div>
-      <div class="cb-secondary">אין יציאות נוספות להיום</div>
-    </div>`;
+  if (!next || next.minutes > 60) {
+    return '';
   }
   if (next.minutes === 0) {
-    return `<div class="countdown-banner countdown-now">
+    return `<div class="countdown-banner countdown-urgent">
       <div class="cb-primary"><span class="live-dot urgent"></span><span class="cb-minutes">עכשיו!</span></div>
       <div class="cb-secondary">יציאה משוערת בשעה ${next.time}</div>
     </div>`;
