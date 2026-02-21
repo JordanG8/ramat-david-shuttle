@@ -2218,28 +2218,37 @@ function isEveningOnCallActive() {
 
 // ─── Render Departure Board ───
 function renderDepartureBoard() {
-  const departures = getAllUpcomingDepartures();
+  const departures = getAllUpcomingDepartures().slice(0, 6);
 
   let html = `<div class="board-section">`;
-  html += `<div class="board-live-label">
+  html += `<div class="board-header">
     <span class="live-dot urgent"></span>
-    <span class="board-live-label-text">יציאות</span>
+    <span class="board-header-text">יציאות שאטלים קרובים (זמן משוער)</span>
   </div>`;
 
   if (departures.length === 0) {
-    html += `<div class="board-empty">אין יציאות קרובות</div>`;
+    html += `<div class="board-empty">
+      <span class="material-symbols-rounded board-empty-icon">schedule</span>
+      <span>אין יציאות שאטלים קרובים כרגע</span>
+    </div>`;
   } else {
-    html += `<div class="board-items">`;
+    html += `<div class="board-list">`;
     departures.forEach((dep) => {
-      const urgentClass = dep.diff <= 5 ? " board-item-urgent" : "";
-      const dotClass = dep.diff <= 5 ? "urgent" : "";
-      html += `<div class="board-item${urgentClass}" onclick="navigateTo('${dep.view}', { highlightTime: '${dep.time}' })">
-        <span class="board-item-route">${esc(dep.routeLabel)}</span>
-        <div class="board-item-row">
-          <span class="live-dot ${dotClass}"></span>
-          <span class="board-item-mins">${formatMinutes(dep.diff)}</span>
+      const urgentClass = dep.diff <= 5 ? " board-row-urgent" : "";
+      const routeColor = dep.view === "train" ? "#1565c0"
+        : dep.view === "tzomet" ? "#00695c"
+        : dep.view === "internal" ? "#2e7d32"
+        : dep.view === "hada" ? "#bf360c"
+        : "#6a1b9a";
+      html += `<div class="board-row${urgentClass}" onclick="navigateTo('${dep.view}', { highlightTime: '${dep.time}' })">
+        <div class="board-row-right">
+          <span class="board-row-vehicle material-symbols-rounded">airport_shuttle</span>
+          <span class="board-row-time-dot" style="color:${routeColor}">${esc(dep.time)}</span>
+          <span class="board-row-route">${esc(dep.routeLabel)}</span>
         </div>
-        <span class="board-item-time">${esc(dep.time)}</span>
+        <div class="board-row-left">
+          <span class="board-row-mins">${formatMinutes(dep.diff)}</span>
+        </div>
       </div>`;
     });
     html += `</div>`;
@@ -2298,7 +2307,6 @@ function renderNavButtons() {
 
   let html = `<div class="nav-card">`;
   html += `<div class="nav-card-brand">
-    <span class="material-symbols-rounded nav-card-brand-icon">directions_bus</span>
     <div class="nav-card-brand-text">
       <div class="nav-card-brand-title">אפליקציית השאטלים</div>
       <div class="nav-card-brand-sub">בסיס כנף 1 — רמת דוד</div>
