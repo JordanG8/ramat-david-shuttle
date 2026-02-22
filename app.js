@@ -1801,10 +1801,14 @@ function renderStationsHtml() {
         })
         .join("");
 
+      const colorStyle = unit.color ? `style="border-right:4px solid ${esc(unit.color)}"` : "";
+      const headerColorStyle = unit.color ? `style="border-left-color:${esc(unit.color)}"` : "";
+
       return `
-      <div class="unit-card">
+      <div class="unit-card" ${colorStyle}>
         <div class="unit-header" onclick="this.parentElement.classList.toggle('open')">
           <div class="unit-title">
+            ${unit.color ? `<span class="unit-color-dot" style="background:${esc(unit.color)}"></span>` : ""}
             ${esc(unit.name)}
             <span class="unit-count">${deptCount}</span>
           </div>
