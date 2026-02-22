@@ -2,7 +2,7 @@
 // RAMAT DAVID SHUTTLE — APP
 // ═══════════════════════════════════════════
 
-const DATA = {
+let DATA = {
   title: "מקרא תחנות הכנף",
   legend: {
     תחנת_שירות: "תחנה ששאטל עוצר בה (ירוק)",
@@ -295,7 +295,7 @@ const DATA = {
 };
 
 // ─── Old Routes Data (full schedule from wing_stations) ───
-const OLD_ROUTES = [
+let OLD_ROUTES = [
   {
     name: "קו 1 - ראשון עד חמישי",
     phone: "",
@@ -1745,6 +1745,20 @@ const OLD_ROUTES = [
   },
 ];
 
+// ─── Load Admin Overrides from localStorage ───
+(function applyAdminOverrides() {
+  try {
+    const saved = localStorage.getItem("shuttle_admin_data");
+    if (!saved) return;
+    const d = JSON.parse(saved);
+    if (d.units) DATA.units = d.units;
+    if (d.bus_routes) DATA.bus_routes = d.bus_routes;
+    if (d.old_routes) OLD_ROUTES = d.old_routes;
+  } catch (e) {
+    console.warn("Admin override load failed:", e);
+  }
+})();
+
 // ─── Helpers ───
 function esc(str) {
   const div = document.createElement("div");
@@ -1787,10 +1801,14 @@ function renderStationsHtml() {
         })
         .join("");
 
+      const colorStyle = unit.color ? `style="border-right:4px solid ${esc(unit.color)}"` : "";
+      const headerColorStyle = unit.color ? `style="border-left-color:${esc(unit.color)}"` : "";
+
       return `
-      <div class="unit-card">
+      <div class="unit-card" ${colorStyle}>
         <div class="unit-header" onclick="this.parentElement.classList.toggle('open')">
           <div class="unit-title">
+            ${unit.color ? `<span class="unit-color-dot" style="background:${esc(unit.color)}"></span>` : ""}
             ${esc(unit.name)}
             <span class="unit-count">${deptCount}</span>
           </div>
@@ -2732,6 +2750,7 @@ window.addEventListener("focus", () => {
 
 // ─── Init ───
 document.addEventListener("DOMContentLoaded", () => {
+  if (!document.getElementById("app-content")) return; // Not the public page
   renderCurrentView();
   startCountdownTimer();
 });

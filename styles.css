@@ -694,6 +694,14 @@ body::before {
   gap: var(--space-sm);
 }
 
+.unit-color-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  border: 2px solid rgba(0, 0, 0, 0.1);
+}
+
 .unit-count {
   font-size: 0.75rem;
   font-weight: 500;
@@ -1983,4 +1991,18 @@ body::before {
 }
 .tl-entry:nth-child(n + 21) {
   animation-delay: 0.42s;
+}
+
+/* ─── Admin footer link ─── */
+.admin-footer-link {
+  opacity: 0.3;
+  color: inherit;
+  text-decoration: none;
+  font-size: 14px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: opacity 0.2s;
+}
+.admin-footer-link:hover {
+  opacity: 0.8;
 }
