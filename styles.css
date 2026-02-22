@@ -300,17 +300,17 @@ body::before {
 
 /* Urgent row */
 .board-row-urgent {
-  background: rgba(255, 224, 130, 0.12);
-  border: 1px solid rgba(255, 224, 130, 0.25);
+  background: rgba(255, 152, 0, 0.08);
+  border: 1px solid rgba(255, 152, 0, 0.18);
 }
 
 .board-row-urgent .board-row-mins {
-  color: #ffe082;
-  animation: livePulse 1.5s ease-in-out infinite;
+  color: #ffb74d;
 }
 
-.board-row-urgent .board-row-time-dot {
-  animation: livePulseUrgent 0.8s ease-in-out infinite;
+.board-row-urgent .board-row-vehicle {
+  color: #ffb74d;
+  animation: vehicleMove 1s ease-in-out infinite;
 }
 
 .board-empty {
