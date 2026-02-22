@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 import { sql } from "@vercel/postgres";
+=======
+import { sql } from '@vercel/postgres';
+>>>>>>> 2290907d01a2edbaf7969e4527bf77e3e8148f8c
 
 export default async function handler(req, res) {
   try {
@@ -21,7 +25,11 @@ export default async function handler(req, res) {
     const defaultData = JSON.stringify({
       units: [],
       bus_routes: [],
+<<<<<<< HEAD
       old_routes: [],
+=======
+      schedules: []
+>>>>>>> 2290907d01a2edbaf7969e4527bf77e3e8148f8c
     });
 
     await sql`
@@ -30,11 +38,18 @@ export default async function handler(req, res) {
       ON CONFLICT (key) DO NOTHING;
     `;
 
+<<<<<<< HEAD
     return res
       .status(200)
       .json({ message: "Database initialized successfully" });
   } catch (error) {
     console.error("Error initializing database:", error);
     return res.status(500).json({ error: "Failed to initialize database" });
+=======
+    return res.status(200).json({ message: 'Database initialized successfully' });
+  } catch (error) {
+    console.error('Error initializing database:', error);
+    return res.status(500).json({ error: 'Failed to initialize database' });
+>>>>>>> 2290907d01a2edbaf7969e4527bf77e3e8148f8c
   }
 }

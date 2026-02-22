@@ -1,3 +1,9 @@
+<<<<<<< HEAD
 .env*.local
 .vercel
 node_modules/
+=======
+node_modules/
+.env
+.vercel/
+>>>>>>> 2290907d01a2edbaf7969e4527bf77e3e8148f8c

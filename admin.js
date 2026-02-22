@@ -21,7 +21,11 @@
     if (s == null) return "";
     var d = document.createElement("div");
     d.textContent = String(s);
+<<<<<<< HEAD
     return d.innerHTML.replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+=======
+    return d.innerHTML;
+>>>>>>> 2290907d01a2edbaf7969e4527bf77e3e8148f8c
   }
 
   function $(id) {
@@ -124,10 +128,17 @@
       editRoutes = clone(serverData.bus_routes);
       DATA.bus_routes = clone(serverData.bus_routes);
     }
+<<<<<<< HEAD
     if (serverData && serverData.old_routes) {
       editSchedules = clone(serverData.old_routes);
       if (typeof OLD_ROUTES !== "undefined")
         OLD_ROUTES = clone(serverData.old_routes);
+=======
+    if (serverData && serverData.schedules) {
+      editSchedules = clone(serverData.schedules);
+      if (typeof OLD_ROUTES !== "undefined")
+        OLD_ROUTES = clone(serverData.schedules);
+>>>>>>> 2290907d01a2edbaf7969e4527bf77e3e8148f8c
     }
 
     initTabs();
@@ -206,7 +217,11 @@
 
   async function loadStored() {
     try {
+<<<<<<< HEAD
       const res = await fetch("/api/data?t=" + new Date().getTime());
+=======
+      const res = await fetch("/api/data");
+>>>>>>> 2290907d01a2edbaf7969e4527bf77e3e8148f8c
       if (res.ok) {
         const data = await res.json();
         return data;

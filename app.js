@@ -295,7 +295,11 @@ let DATA = {
 };
 
 // ─── Old Routes Data (full schedule from wing_stations) ───
+<<<<<<< HEAD
 let OLD_ROUTES = [
+=======
+const DEFAULT_OLD_ROUTES = [
+>>>>>>> 2290907d01a2edbaf7969e4527bf77e3e8148f8c
   {
     name: "קו 1 - ראשון עד חמישי",
     phone: "",
@@ -1745,6 +1749,20 @@ let OLD_ROUTES = [
   },
 ];
 
+// ─── Load Admin Overrides from localStorage ───
+(function applyAdminOverrides() {
+  try {
+    const saved = localStorage.getItem("shuttle_admin_data");
+    if (!saved) return;
+    const d = JSON.parse(saved);
+    if (d.units) DATA.units = d.units;
+    if (d.bus_routes) DATA.bus_routes = d.bus_routes;
+    if (d.old_routes) OLD_ROUTES = d.old_routes;
+  } catch (e) {
+    console.warn("Admin override load failed:", e);
+  }
+})();
+
 // ─── Helpers ───
 function esc(str) {
   const div = document.createElement("div");
@@ -1787,10 +1805,18 @@ function renderStationsHtml() {
         })
         .join("");
 
+      const colorStyle = unit.color
+        ? `style="border-right:4px solid ${esc(unit.color)}"`
+        : "";
+      const headerColorStyle = unit.color
+        ? `style="border-left-color:${esc(unit.color)}"`
+        : "";
+
       return `
-      <div class="unit-card">
+      <div class="unit-card" ${colorStyle}>
         <div class="unit-header" onclick="this.parentElement.classList.toggle('open')">
           <div class="unit-title">
+            ${unit.color ? `<span class="unit-color-dot" style="background:${esc(unit.color)}"></span>` : ""}
             ${esc(unit.name)}
             <span class="unit-count">${deptCount}</span>
           </div>
@@ -2737,6 +2763,7 @@ window.addEventListener("focus", () => {
 
 // ─── Init ───
 document.addEventListener("DOMContentLoaded", async () => {
+<<<<<<< HEAD
   try {
     const res = await fetch("/api/data?t=" + new Date().getTime());
     if (res.ok) {
@@ -2748,6 +2775,28 @@ document.addEventListener("DOMContentLoaded", async () => {
   } catch (e) {
     console.error("Failed to load data from API, using fallback", e);
   }
+=======
+  if (!document.getElementById("app-content")) return; // Not the public page
+
+  try {
+    const res = await fetch("/api/data");
+    if (res.ok) {
+      const serverData = await res.json();
+      if (serverData.units && serverData.units.length > 0) {
+        DATA.units = serverData.units;
+      }
+      if (serverData.bus_routes && serverData.bus_routes.length > 0) {
+        DATA.bus_routes = serverData.bus_routes;
+      }
+      if (serverData.old_routes && serverData.old_routes.length > 0) {
+        OLD_ROUTES = serverData.old_routes;
+      }
+    }
+  } catch (e) {
+    console.error("Error loading data from server", e);
+  }
+
+>>>>>>> 2290907d01a2edbaf7969e4527bf77e3e8148f8c
   renderCurrentView();
   startCountdownTimer();
 });
