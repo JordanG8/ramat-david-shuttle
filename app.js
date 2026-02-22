@@ -2,7 +2,7 @@
 // RAMAT DAVID SHUTTLE — APP
 // ═══════════════════════════════════════════
 
-const DATA = {
+let DATA = {
   title: "מקרא תחנות הכנף",
   legend: {
     תחנת_שירות: "תחנה ששאטל עוצר בה (ירוק)",
@@ -295,7 +295,7 @@ const DATA = {
 };
 
 // ─── Old Routes Data (full schedule from wing_stations) ───
-const OLD_ROUTES = [
+let OLD_ROUTES = [
   {
     name: "קו 1 - ראשון עד חמישי",
     phone: "",
@@ -1749,7 +1749,7 @@ const OLD_ROUTES = [
 function esc(str) {
   const div = document.createElement("div");
   div.textContent = str;
-  return div.innerHTML;
+  return div.innerHTML.replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
 
 const chevronSVG = `<svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>`;
@@ -2235,11 +2235,16 @@ function renderDepartureBoard() {
     html += `<div class="board-list">`;
     departures.forEach((dep) => {
       const urgentClass = dep.diff <= 5 ? " board-row-urgent" : "";
-      const routeColor = dep.view === "train" ? "#1565c0"
-        : dep.view === "tzomet" ? "#00695c"
-        : dep.view === "internal" ? "#2e7d32"
-        : dep.view === "hada" ? "#bf360c"
-        : "#6a1b9a";
+      const routeColor =
+        dep.view === "train"
+          ? "#1565c0"
+          : dep.view === "tzomet"
+            ? "#00695c"
+            : dep.view === "internal"
+              ? "#2e7d32"
+              : dep.view === "hada"
+                ? "#bf360c"
+                : "#6a1b9a";
       html += `<div class="board-row${urgentClass}" onclick="navigateTo('${dep.view}', { highlightTime: '${dep.time}' })">
         <div class="board-row-right">
           <span class="board-row-vehicle material-symbols-rounded">airport_shuttle</span>
@@ -2731,7 +2736,18 @@ window.addEventListener("focus", () => {
 });
 
 // ─── Init ───
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
+  try {
+    const res = await fetch("/api/data?t=" + new Date().getTime());
+    if (res.ok) {
+      const dbData = await res.json();
+      if (dbData.units) DATA.units = dbData.units;
+      if (dbData.bus_routes) DATA.bus_routes = dbData.bus_routes;
+      if (dbData.old_routes) OLD_ROUTES = dbData.old_routes;
+    }
+  } catch (e) {
+    console.error("Failed to load data from API, using fallback", e);
+  }
   renderCurrentView();
   startCountdownTimer();
 });
