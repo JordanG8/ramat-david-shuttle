@@ -295,7 +295,7 @@ let DATA = {
 };
 
 // ─── Old Routes Data (full schedule from wing_stations) ───
-let OLD_ROUTES = [
+const DEFAULT_OLD_ROUTES = [
   {
     name: "קו 1 - ראשון עד חמישי",
     phone: "",
@@ -1801,8 +1801,12 @@ function renderStationsHtml() {
         })
         .join("");
 
-      const colorStyle = unit.color ? `style="border-right:4px solid ${esc(unit.color)}"` : "";
-      const headerColorStyle = unit.color ? `style="border-left-color:${esc(unit.color)}"` : "";
+      const colorStyle = unit.color
+        ? `style="border-right:4px solid ${esc(unit.color)}"`
+        : "";
+      const headerColorStyle = unit.color
+        ? `style="border-left-color:${esc(unit.color)}"`
+        : "";
 
       return `
       <div class="unit-card" ${colorStyle}>
@@ -2253,11 +2257,16 @@ function renderDepartureBoard() {
     html += `<div class="board-list">`;
     departures.forEach((dep) => {
       const urgentClass = dep.diff <= 5 ? " board-row-urgent" : "";
-      const routeColor = dep.view === "train" ? "#1565c0"
-        : dep.view === "tzomet" ? "#00695c"
-        : dep.view === "internal" ? "#2e7d32"
-        : dep.view === "hada" ? "#bf360c"
-        : "#6a1b9a";
+      const routeColor =
+        dep.view === "train"
+          ? "#1565c0"
+          : dep.view === "tzomet"
+            ? "#00695c"
+            : dep.view === "internal"
+              ? "#2e7d32"
+              : dep.view === "hada"
+                ? "#bf360c"
+                : "#6a1b9a";
       html += `<div class="board-row${urgentClass}" onclick="navigateTo('${dep.view}', { highlightTime: '${dep.time}' })">
         <div class="board-row-right">
           <span class="board-row-vehicle material-symbols-rounded">airport_shuttle</span>
@@ -2749,8 +2758,27 @@ window.addEventListener("focus", () => {
 });
 
 // ─── Init ───
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
   if (!document.getElementById("app-content")) return; // Not the public page
+
+  try {
+    const res = await fetch("/api/data");
+    if (res.ok) {
+      const serverData = await res.json();
+      if (serverData.units && serverData.units.length > 0) {
+        DATA.units = serverData.units;
+      }
+      if (serverData.bus_routes && serverData.bus_routes.length > 0) {
+        DATA.bus_routes = serverData.bus_routes;
+      }
+      if (serverData.old_routes && serverData.old_routes.length > 0) {
+        OLD_ROUTES = serverData.old_routes;
+      }
+    }
+  } catch (e) {
+    console.error("Error loading data from server", e);
+  }
+
   renderCurrentView();
   startCountdownTimer();
 });
