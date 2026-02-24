@@ -3,10 +3,7 @@
   "version": "1.0.0",
   "description": "",
   "main": "admin.js",
-<<<<<<< HEAD
   "type": "module",
-=======
->>>>>>> 2290907d01a2edbaf7969e4527bf77e3e8148f8c
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
