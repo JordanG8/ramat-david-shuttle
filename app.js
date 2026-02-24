@@ -1893,7 +1893,7 @@ function renderDepartureTable(departures, filterReinforcement, split) {
       html += `
         <div class="card-block times-block-compact">
           <div class="card-block-header static">
-            <div class="card-block-title">${clockSVG} שעות יציאה</div>
+            <div class="card-block-title">${clockSVG} שעות יציאה <span class="estimated-tag">משוערות</span></div>
           </div>
           ${renderDepartureList(regular)}
         </div>`;
@@ -1925,7 +1925,7 @@ function renderDepartureTable(departures, filterReinforcement, split) {
   return `
     <div class="card-block times-block-compact">
       <div class="card-block-header static">
-        <div class="card-block-title">${clockSVG} שעות יציאה</div>
+        <div class="card-block-title">${clockSVG} שעות יציאה <span class="estimated-tag">משוערות</span></div>
       </div>
       ${renderDepartureList(filtered)}
     </div>`;
@@ -1936,7 +1936,7 @@ function renderDepartureTimesStr(timesStr) {
   return `
     <div class="card-block times-block-compact">
       <div class="card-block-header static">
-        <div class="card-block-title">${clockSVG} שעות יציאה</div>
+        <div class="card-block-title">${clockSVG} שעות יציאה <span class="estimated-tag">משוערות</span></div>
       </div>
       <div class="departure-list">
         ${times
@@ -1981,7 +1981,7 @@ function renderRouteCard(route, opts) {
     bodyHtml += `
       <div class="card-block evening-block">
         <div class="card-block-header static">
-          <div class="card-block-title">${moonSVG} ערב</div>
+          <div class="card-block-title">${moonSVG} ערב <span class="estimated-tag">משוער</span></div>
         </div>
         <div class="evening-info">
           <div class="dep-chip dep-chip--evening">
@@ -2531,7 +2531,7 @@ function renderHadaCard(title, trips) {
     html += `
       <div class="card-block stops-block${passed}" onclick="this.classList.toggle('open')">
         <div class="card-block-header">
-          <div class="card-block-title">${mapPinSVG} ${esc(trip.time)}</div>
+          <div class="card-block-title">${mapPinSVG} ${esc(trip.time)} <span class="estimated-tag">משוער</span></div>
           <div class="card-block-meta">
             <span class="stop-count-badge">${trip.stops.length} תחנות</span>
             ${smallChevronSVG}
@@ -2572,7 +2572,7 @@ function renderOnCallContent() {
       <div class="route-card-body">
         <div class="card-block evening-block">
           <div class="card-block-header static">
-            <div class="card-block-title">${moonSVG} שעות פעילות</div>
+            <div class="card-block-title">${moonSVG} שעות פעילות <span class="estimated-tag">משוערות</span></div>
           </div>
           <div class="evening-info">
             <div class="dep-chip dep-chip--evening">
@@ -2669,6 +2669,7 @@ function renderOldRouteContentHtml() {
         <div class="route-card-title">${esc(route.name)}</div>
       </div>
       <div class="route-card-body">
+        <div class="schedule-timeline-note"><span class="estimated-tag">* זמנים משוערים</span></div>
         <div class="schedule-timeline">
           ${scheduleHtml}
         </div>
