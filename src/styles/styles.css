@@ -205,6 +205,10 @@ body::before {
 
 .top-tab-icon {
   font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 1.2rem;
 }
 
 .top-tab-label {
@@ -232,7 +236,6 @@ body::before {
   width: 1.15em;
   height: 1.15em;
   vertical-align: middle;
-  filter: brightness(0) invert(1);
   display: inline-block;
 }
 
@@ -278,7 +281,7 @@ body::before {
    ══════════════════════════════════════ */
 .board-head {
   display: grid;
-  grid-template-columns: 60px 1fr 72px;
+  grid-template-columns: 1fr auto auto;
   align-items: center;
   padding: 7px 0;
   background: rgba(255, 255, 255, 0.04);
@@ -301,7 +304,7 @@ body::before {
    ══════════════════════════════════════ */
 .board-row {
   display: grid;
-  grid-template-columns: 60px 1fr 72px;
+  grid-template-columns: 1fr auto auto;
   align-items: center;
   padding: 11px 0;
   cursor: pointer;
@@ -387,7 +390,6 @@ body::before {
 .board-cell-icon .railway-icon {
   width: 1.1em;
   height: 1.1em;
-  opacity: 0.85;
 }
 
 /* ETA column */
@@ -596,6 +598,8 @@ body::before {
 .top-tab-icon .railway-icon {
   width: 1.15rem;
   height: 1.15rem;
+  display: block;
+  margin: 0 auto;
 }
 
 /* Per-route icon colors */
