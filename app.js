@@ -511,47 +511,91 @@ function isEveningOnCallActive() {
   return h >= 18 && h < 22;
 }
 
+// ─── Route meta helper ───
+function getRouteMeta(view) {
+  const meta = {
+    train:    { icon: "train",          color: "#1565c0", bg: "rgba(21,101,192,0.12)", label: "רכבת" },
+    tzomet:   { icon: "alt_route",      color: "#00796b", bg: "rgba(0,121,107,0.12)",  label: "צומת" },
+    internal: { icon: "directions_bus",  color: "#2e7d32", bg: "rgba(46,125,50,0.12)",  label: "פנים" },
+    hada:     { icon: "restaurant",     color: "#e65100", bg: "rgba(230,81,0,0.12)",   label: 'חד"א' },
+    oncall:   { icon: "call",           color: "#6a1b9a", bg: "rgba(106,27,154,0.12)", label: "קריאה" },
+  };
+  return meta[view] || meta.train;
+}
+
 // ─── Render Departure Board ───
 function renderDepartureBoard() {
   const departures = getAllUpcomingDepartures().slice(0, 6);
 
   let html = `<div class="board-section">`;
   html += `<div class="board-header">
-    <span class="live-dot urgent"></span>
-    <span class="board-header-text">יציאות שאטלים קרובים (זמן משוער)</span>
+    <span class="live-dot${departures.length > 0 && departures[0].diff <= 5 ? ' urgent' : ''}"></span>
+    <span class="board-header-text">יציאות קרובות</span>
+    <span class="board-header-sub">זמנים משוערים</span>
   </div>`;
 
   if (departures.length === 0) {
     html += `<div class="board-empty">
-      <span class="material-symbols-rounded board-empty-icon">schedule</span>
-      <span>אין יציאות שאטלים קרובים כרגע</span>
+      <span class="material-symbols-rounded board-empty-icon">nightlight</span>
+      <span class="board-empty-title">אין שאטלים קרובים כרגע</span>
+      <span class="board-empty-sub">השאטלים הבאים יופיעו כאן כשיהיו יציאות בשעתיים הקרובות</span>
     </div>`;
   } else {
-    html += `<div class="board-list">`;
-    departures.forEach((dep) => {
-      const urgentClass = dep.diff <= 5 ? " board-row-urgent" : "";
-      const routeColor =
-        dep.view === "train"
-          ? "#1565c0"
-          : dep.view === "tzomet"
-            ? "#00695c"
-            : dep.view === "internal"
-              ? "#2e7d32"
-              : dep.view === "hada"
-                ? "#bf360c"
-                : "#6a1b9a";
-      html += `<div class="board-row${urgentClass}" onclick="navigateTo('${dep.view}', { highlightTime: '${dep.time}' })">
-        <div class="board-row-right">
-          <span class="board-row-vehicle material-symbols-rounded">airport_shuttle</span>
-          <span class="board-row-time-dot" style="color:${routeColor}">${esc(dep.time)}</span>
-          <span class="board-row-route">${esc(dep.routeLabel)}</span>
-        </div>
-        <div class="board-row-left">
-          <span class="board-row-mins">${formatMinutes(dep.diff)}</span>
-        </div>
-      </div>`;
-    });
-    html += `</div>`;
+    // ── Hero: first departure gets special treatment ──
+    const hero = departures[0];
+    const heroMeta = getRouteMeta(hero.view);
+    const heroUrgent = hero.diff <= 5;
+    const heroNow = hero.diff === 0;
+    html += `<div class="board-hero${heroUrgent ? ' board-hero--urgent' : ''}${heroNow ? ' board-hero--now' : ''}" onclick="navigateTo('${hero.view}', { highlightTime: '${hero.time}' })">
+      <div class="board-hero-top">
+        <span class="board-badge" style="--badge-color:${heroMeta.color};--badge-bg:${heroMeta.bg}">
+          <span class="material-symbols-rounded board-badge-icon">${heroMeta.icon}</span>
+          ${heroMeta.label}
+        </span>
+        <span class="board-hero-route">${esc(hero.routeLabel)}</span>
+      </div>
+      <div class="board-hero-center">
+        <span class="board-hero-countdown">${heroNow ? 'עכשיו!' : hero.diff + '<small> דק׳</small>'}</span>
+        ${heroUrgent ? '<span class="board-hero-pulse"></span>' : ''}
+      </div>
+      <div class="board-hero-bottom">
+        <span class="board-hero-time">
+          <span class="material-symbols-rounded board-hero-time-icon">schedule</span>
+          יציאה ב-${esc(hero.time)}
+        </span>
+        <span class="board-hero-tap">
+          <span class="material-symbols-rounded">arrow_back</span>
+          לפרטים
+        </span>
+      </div>
+    </div>`;
+
+    // ── Remaining departures ──
+    if (departures.length > 1) {
+      html += `<div class="board-list">`;
+      departures.slice(1).forEach((dep) => {
+        const meta = getRouteMeta(dep.view);
+        const isUrgent = dep.diff <= 5;
+        const isNow = dep.diff === 0;
+        const urgentClass = isUrgent ? " board-row--urgent" : "";
+        html += `<div class="board-row${urgentClass}" onclick="navigateTo('${dep.view}', { highlightTime: '${dep.time}' })">
+          <div class="board-row-right">
+            <span class="board-badge board-badge--sm" style="--badge-color:${meta.color};--badge-bg:${meta.bg}">
+              <span class="material-symbols-rounded board-badge-icon">${meta.icon}</span>
+            </span>
+            <div class="board-row-info">
+              <span class="board-row-route">${esc(dep.routeLabel)}</span>
+              <span class="board-row-time">${esc(dep.time)}</span>
+            </div>
+          </div>
+          <div class="board-row-left">
+            <span class="board-row-mins${isNow ? ' board-row-mins--now' : ''}">${isNow ? 'עכשיו!' : dep.diff + ' דק׳'}</span>
+            ${isUrgent ? '<span class="live-dot urgent board-row-dot"></span>' : ''}
+          </div>
+        </div>`;
+      });
+      html += `</div>`;
+    }
   }
 
   html += `</div>`;

@@ -217,31 +217,226 @@ body::before {
 }
 
 /* ─── Departure Board (vertical cards) ─── */
+/* ─── Departures Board ─── */
 .board-section {
   background: var(--olive-800);
   color: #fff;
-  padding: 14px 16px 10px;
+  padding: 16px 16px 14px;
 }
 
 .board-header {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding-bottom: 10px;
+  padding-bottom: 14px;
 }
 
 .board-header-text {
   font-family: var(--font-display);
-  font-size: 0.82rem;
+  font-size: 0.88rem;
   font-weight: 800;
-  color: rgba(255, 255, 255, 0.92);
-  letter-spacing: 0.03em;
+  color: rgba(255, 255, 255, 0.95);
+  letter-spacing: 0.02em;
 }
 
+.board-header-sub {
+  font-size: 0.7rem;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.4);
+  margin-right: auto;
+  direction: rtl;
+}
+
+/* ── Route Badge ── */
+.board-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px 3px 8px;
+  border-radius: 20px;
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--badge-color);
+  background: var(--badge-bg);
+  white-space: nowrap;
+  flex-shrink: 0;
+  backdrop-filter: blur(4px);
+  border: 1px solid color-mix(in srgb, var(--badge-color) 20%, transparent);
+}
+
+.board-badge-icon {
+  font-size: 0.85rem;
+}
+
+.board-badge--sm {
+  padding: 3px 6px;
+  border-radius: 8px;
+  font-size: 0;
+}
+
+.board-badge--sm .board-badge-icon {
+  font-size: 1rem;
+}
+
+/* ── Hero Card (next departure) ── */
+.board-hero {
+  position: relative;
+  background: linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  user-select: none;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.board-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 14px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  background: linear-gradient(135deg, rgba(255,255,255,0.06) 0%, transparent 100%);
+}
+
+.board-hero:hover::before {
+  opacity: 1;
+}
+
+.board-hero:active {
+  transform: scale(0.98);
+}
+
+.board-hero-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.board-hero-route {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.8);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.board-hero-center {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.board-hero-countdown {
+  font-family: var(--font-display);
+  font-size: 2.6rem;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: #fff;
+}
+
+.board-hero-countdown small {
+  font-size: 0.45em;
+  font-weight: 700;
+  opacity: 0.7;
+}
+
+.board-hero-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.board-hero-time {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.55);
+  direction: rtl;
+}
+
+.board-hero-time-icon {
+  font-size: 0.9rem;
+  opacity: 0.6;
+}
+
+.board-hero-tap {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.35);
+  direction: rtl;
+}
+
+.board-hero-tap .material-symbols-rounded {
+  font-size: 0.85rem;
+}
+
+/* Hero urgent state */
+.board-hero--urgent {
+  border-color: rgba(255, 183, 77, 0.3);
+  background: linear-gradient(135deg, rgba(200, 80, 30, 0.25) 0%, rgba(180, 40, 40, 0.15) 100%);
+}
+
+.board-hero--urgent .board-hero-countdown {
+  color: #ffb74d;
+}
+
+/* Hero pulse ring for urgent */
+.board-hero-pulse {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #ffb74d;
+  box-shadow: 0 0 8px rgba(255, 183, 77, 0.6);
+  animation: heroPulse 1s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+@keyframes heroPulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.5); opacity: 0.4; }
+}
+
+/* Hero NOW state */
+.board-hero--now {
+  border-color: rgba(76, 175, 80, 0.4);
+  background: linear-gradient(135deg, rgba(56, 142, 60, 0.3) 0%, rgba(46, 125, 50, 0.15) 100%);
+}
+
+.board-hero--now .board-hero-countdown {
+  color: #81c784;
+  animation: nowPulseText 1.5s ease-in-out infinite;
+}
+
+.board-hero--now .board-hero-pulse {
+  background: #81c784;
+  box-shadow: 0 0 10px rgba(129, 199, 132, 0.6);
+}
+
+@keyframes nowPulseText {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+/* ── Remaining Rows ── */
 .board-list {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
 }
 
 .board-row {
@@ -249,21 +444,21 @@ body::before {
   align-items: center;
   justify-content: space-between;
   padding: 10px 12px;
-  background: rgba(180, 40, 40, 0.55);
+  background: rgba(255, 255, 255, 0.04);
   border-radius: 10px;
   cursor: pointer;
-  transition: background 0.2s ease, box-shadow 0.2s ease;
+  transition: background 0.2s ease, transform 0.15s ease;
   user-select: none;
-  border: 1px solid rgba(255, 80, 80, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .board-row:hover {
-  background: rgba(180, 40, 40, 0.7);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .board-row:active {
-  background: rgba(180, 40, 40, 0.8);
   transform: scale(0.985);
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .board-row-right {
@@ -273,79 +468,97 @@ body::before {
   min-width: 0;
 }
 
-.board-row-vehicle {
-  font-size: 1.1rem;
-  opacity: 0.75;
-  animation: vehicleMove 1.8s ease-in-out infinite;
-}
-
-@keyframes vehicleMove {
-  0%, 100% { transform: translateX(0); }
-  50% { transform: translateX(-5px); }
-}
-
-.board-row-time-dot {
-  font-size: 0.85rem;
-  font-weight: 700;
-  flex-shrink: 0;
-  direction: ltr;
-  white-space: nowrap;
+.board-row-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
 }
 
 .board-row-route {
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.3;
+}
+
+.board-row-time {
+  font-size: 0.72rem;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.4);
+  direction: ltr;
+  text-align: right;
 }
 
 .board-row-left {
   display: flex;
-  align-items: baseline;
-  gap: 8px;
+  align-items: center;
+  gap: 6px;
   flex-shrink: 0;
-  margin-right: 12px;
+  margin-right: 8px;
 }
 
 .board-row-mins {
   font-family: var(--font-display);
-  font-size: 1rem;
-  font-weight: 900;
+  font-size: 0.95rem;
+  font-weight: 800;
   white-space: nowrap;
   letter-spacing: -0.02em;
+  color: rgba(255, 255, 255, 0.85);
 }
 
+.board-row-mins--now {
+  color: #81c784;
+  font-weight: 900;
+}
+
+.board-row-dot {
+  width: 6px;
+  height: 6px;
+}
 
 /* Urgent row */
-.board-row-urgent {
-  background: rgba(200, 30, 30, 0.75);
-  border: 1px solid rgba(255, 100, 100, 0.3);
+.board-row--urgent {
+  background: rgba(200, 80, 30, 0.15);
+  border-color: rgba(255, 183, 77, 0.15);
 }
 
-.board-row-urgent .board-row-mins {
+.board-row--urgent .board-row-mins {
   color: #ffb74d;
+  font-weight: 900;
 }
 
-.board-row-urgent .board-row-vehicle {
-  color: #ffb74d;
-  animation: vehicleMove 1s ease-in-out infinite;
-}
-
+/* ── Empty State ── */
 .board-empty {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 6px;
-  padding: 20px 0 14px;
+  padding: 28px 16px 20px;
   text-align: center;
-  color: rgba(255, 255, 255, 0.55);
-  font-size: 0.85rem;
 }
 
 .board-empty-icon {
-  font-size: 1.6rem;
-  opacity: 0.4;
+  font-size: 2rem;
+  color: rgba(255, 255, 255, 0.2);
+  margin-bottom: 2px;
+}
+
+.board-empty-title {
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.board-empty-sub {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.3);
+  max-width: 260px;
+  line-height: 1.5;
 }
 
 /* ─── Board Item Highlight (from board tap) ─── */
@@ -1708,12 +1921,16 @@ body::before {
     border-radius: 11px;
   }
 
-  .board-item {
-    padding: 6px 10px;
+  .board-hero {
+    padding: 12px 14px;
   }
 
-  .board-item-mins {
-    font-size: 0.88rem;
+  .board-hero-countdown {
+    font-size: 2.2rem;
+  }
+
+  .board-row-route {
+    font-size: 0.78rem;
   }
 
   .timeline {
