@@ -221,9 +221,10 @@ body::before {
    DEPARTURES BOARD
    ═══════════════════════════════════════════ */
 .board-section {
-  background: var(--accent);
+  background: var(--olive-800);
   color: #fff;
   padding: 0;
+  overflow: hidden;
 }
 
 /* ── Title Bar ── */
@@ -231,8 +232,8 @@ body::before {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 16px 10px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 11px 16px;
+  background: var(--olive-900);
 }
 
 .board-title-right {
@@ -242,61 +243,109 @@ body::before {
 }
 
 .board-title-icon {
-  font-size: 1.25rem;
-  opacity: 0.9;
+  font-size: 1.2rem;
+  opacity: 0.7;
 }
 
 .board-title-text {
   font-family: var(--font-display);
-  font-size: 0.95rem;
+  font-size: 0.88rem;
   font-weight: 800;
   letter-spacing: 0.02em;
 }
 
 .board-estimated {
-  background: rgba(255, 255, 255, 0.2);
-  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.4);
   border: none;
-  font-size: 0.65rem;
-  padding: 2px 8px;
-  border-radius: 4px;
+  font-size: 0.6rem;
+  padding: 2px 7px;
+  border-radius: 3px;
   font-weight: 600;
 }
 
-/* ── Hero (next departure) ── */
+/* ══════════════════════════════════════
+   HERO — next departure (red card)
+   ══════════════════════════════════════ */
 .board-hero {
-  padding: 14px 16px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
   cursor: pointer;
-  transition: background 0.2s ease;
   user-select: none;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(0, 0, 0, 0.1);
+  background: var(--accent);
+  transition: background 0.15s ease;
 }
 
 .board-hero:active {
-  background: rgba(0, 0, 0, 0.2);
+  background: #b71c1c;
+}
+
+/* Right side: icon + route info */
+.board-hero-right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.board-hero-icon-wrap {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+
+.board-hero-icon-wrap .material-symbols-rounded {
+  font-size: 1.2rem;
+  color: #fff;
+}
+
+.board-hero-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
 }
 
 .board-hero-label {
-  font-size: 0.7rem;
-  font-weight: 600;
+  font-size: 0.62rem;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: rgba(255, 255, 255, 0.6);
-  margin-bottom: 6px;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.55);
+  line-height: 1.3;
 }
 
-.board-hero-main {
-  display: flex;
-  align-items: center;
-  gap: 16px;
+.board-hero-route {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 800;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.35;
 }
 
-.board-hero-countdown {
+.board-hero-time {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.55);
+  line-height: 1.3;
+}
+
+/* Left side: big ETA number */
+.board-hero-eta {
   display: flex;
   align-items: baseline;
-  gap: 4px;
+  gap: 3px;
   flex-shrink: 0;
+  padding-right: 12px;
 }
 
 .board-hero-num {
@@ -309,14 +358,14 @@ body::before {
 
 .board-hero-unit {
   font-family: var(--font-display);
-  font-size: 1rem;
+  font-size: 0.85rem;
   font-weight: 700;
-  opacity: 0.7;
+  color: rgba(255, 255, 255, 0.6);
 }
 
 .board-hero-now {
   font-family: var(--font-display);
-  font-size: 1.8rem;
+  font-size: 1.6rem;
   font-weight: 900;
   line-height: 1;
   animation: nowBlink 1.2s ease-in-out infinite;
@@ -324,61 +373,12 @@ body::before {
 
 @keyframes nowBlink {
   0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
-}
-
-.board-hero-dot {
-  margin-right: 6px;
-  align-self: center;
-}
-
-.board-hero-detail {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-
-.board-hero-route {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 0.92rem;
-  font-weight: 700;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.board-hero-route-icon {
-  font-size: 1.1rem;
-  opacity: 0.8;
-}
-
-.board-hero-time {
-  font-size: 0.78rem;
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.6);
-}
-
-.board-hero-tap {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 4px;
-  margin-top: 8px;
-  font-size: 0.68rem;
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.4);
-}
-
-.board-hero-tap .material-symbols-rounded {
-  font-size: 0.8rem;
+  50% { opacity: 0.4; }
 }
 
 /* Hero urgent */
 .board-hero--urgent {
-  background: rgba(0, 0, 0, 0.18);
+  background: #b71c1c;
 }
 
 .board-hero--urgent .board-hero-num,
@@ -386,111 +386,113 @@ body::before {
   color: #ffe082;
 }
 
-/* ── Departures Table ── */
-.board-table {
-  padding: 0;
+/* ══════════════════════════════════════
+   LIST — remaining departures
+   ══════════════════════════════════════ */
+.board-list {
+  display: flex;
+  flex-direction: column;
 }
 
-.board-table-head {
-  display: grid;
-  grid-template-columns: 42px 1fr 56px 72px;
+.board-row {
+  display: flex;
   align-items: center;
-  padding: 6px 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.board-th {
-  font-family: var(--font-display);
-  font-size: 0.65rem;
-  font-weight: 700;
-  color: rgba(255, 255, 255, 0.45);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.board-th-time,
-.board-th-eta {
-  text-align: center;
-}
-
-.board-tr {
-  display: grid;
-  grid-template-columns: 42px 1fr 56px 72px;
-  align-items: center;
-  padding: 10px 16px;
+  justify-content: space-between;
+  padding: 10px 20px 10px 16px;
   cursor: pointer;
-  transition: background 0.15s ease;
   user-select: none;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  transition: background 0.15s ease;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-.board-tr:last-child {
+.board-row:last-child {
   border-bottom: none;
 }
 
-.board-tr:hover {
-  background: rgba(0, 0, 0, 0.08);
+.board-row--alt {
+  background: rgba(255, 255, 255, 0.025);
 }
 
-.board-tr:active {
-  background: rgba(0, 0, 0, 0.15);
+.board-row:hover {
+  background: rgba(255, 255, 255, 0.06);
 }
 
-.board-td {
-  font-size: 0.82rem;
-  font-weight: 500;
+.board-row:active {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Right side: icon + destination */
+.board-row-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.board-row-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.board-row-icon .material-symbols-rounded {
+  font-size: 1rem;
+  color: #fff;
+}
+
+.board-row-dest {
+  font-size: 0.84rem;
+  font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  color: rgba(255, 255, 255, 0.9);
 }
 
-.board-td-route {
+/* Left side: time + ETA pill */
+.board-row-left {
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 10px;
+  flex-shrink: 0;
 }
 
-.board-td-icon {
-  font-size: 1.15rem;
-  opacity: 0.75;
-}
-
-.board-td-dest {
-  font-weight: 600;
-  padding-left: 4px;
-}
-
-.board-td-time {
-  text-align: center;
-  font-weight: 600;
-  font-size: 0.82rem;
+.board-row-time {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.4);
   direction: ltr;
-  color: rgba(255, 255, 255, 0.8);
 }
 
-.board-td-eta {
-  text-align: center;
+.board-row-eta {
   font-family: var(--font-display);
+  font-size: 0.78rem;
   font-weight: 800;
-  font-size: 0.85rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
+  white-space: nowrap;
+  min-width: 52px;
+  text-align: center;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.85);
 }
 
-.board-td-eta--urgent {
+.board-row-eta--urgent {
+  background: rgba(198, 40, 40, 0.5);
   color: #ffe082;
 }
 
-.board-td-dot {
-  width: 6px;
-  height: 6px;
+/* Urgent row */
+.board-row--urgent {
+  background: rgba(198, 40, 40, 0.08);
 }
 
-/* Urgent row */
-.board-tr--urgent {
-  background: rgba(0, 0, 0, 0.08);
+.board-row--urgent.board-row--alt {
+  background: rgba(198, 40, 40, 0.1);
 }
 
 /* ── Empty State ── */
@@ -505,7 +507,7 @@ body::before {
 
 .board-empty-icon {
   font-size: 2rem;
-  color: rgba(255, 255, 255, 0.3);
+  color: rgba(255, 255, 255, 0.2);
   margin-bottom: 2px;
 }
 
@@ -513,13 +515,13 @@ body::before {
   font-family: var(--font-display);
   font-size: 0.9rem;
   font-weight: 700;
-  color: rgba(255, 255, 255, 0.75);
+  color: rgba(255, 255, 255, 0.65);
 }
 
 .board-empty-sub {
   font-size: 0.75rem;
   font-weight: 400;
-  color: rgba(255, 255, 255, 0.4);
+  color: rgba(255, 255, 255, 0.35);
   max-width: 260px;
   line-height: 1.5;
 }
@@ -1884,23 +1886,30 @@ body::before {
     border-radius: 11px;
   }
 
+  .board-hero {
+    padding: 14px 14px;
+  }
+
   .board-hero-num {
     font-size: 2.4rem;
   }
 
   .board-hero-route {
-    font-size: 0.85rem;
+    font-size: 0.88rem;
   }
 
-  .board-table-head,
-  .board-tr {
-    grid-template-columns: 36px 1fr 50px 64px;
-    padding-left: 12px;
-    padding-right: 12px;
+  .board-row {
+    padding: 9px 14px 9px 12px;
   }
 
-  .board-td-dest {
-    font-size: 0.78rem;
+  .board-row-dest {
+    font-size: 0.8rem;
+  }
+
+  .board-row-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
   }
 
   .timeline {
