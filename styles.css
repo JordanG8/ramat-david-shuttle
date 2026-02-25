@@ -1361,6 +1361,15 @@ body::before {
   padding: var(--space-sm) var(--space-md);
 }
 
+/* ─── Estimated Tag ─── */
+.estimated-tag {
+  font-size: 0.68rem;
+  font-weight: 500;
+  opacity: 0.65;
+  font-style: italic;
+  color: var(--text-muted);
+}
+
 /* ─── Departure Grid ─── */
 .departure-grid {
   display: grid;
@@ -1712,6 +1721,10 @@ body::before {
 }
 
 /* ─── Schedule Timeline (Old Routes) ─── */
+.schedule-timeline-note {
+  padding: 4px var(--space-md) 2px;
+}
+
 .schedule-timeline {
   display: flex;
   flex-direction: column;
