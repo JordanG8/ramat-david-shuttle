@@ -1903,7 +1903,7 @@ function renderDepartureTable(departures, filterReinforcement, split) {
       html += `
         <div class="card-block times-block-compact times-block--reinforce${reinforceOpen}" onclick="this.classList.toggle('open')">
           <div class="card-block-header reinforce-header">
-            <div class="card-block-title">${reinforceSVG} תגבור ראשון וחמישי</div>
+            <div class="card-block-title">${reinforceSVG} תגבור ראשון וחמישי <span class="estimated-tag">משוער</span></div>
             <div class="card-block-meta">${smallChevronSVG}</div>
           </div>
           <div class="card-block-body">
