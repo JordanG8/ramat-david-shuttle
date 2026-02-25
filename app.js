@@ -704,6 +704,7 @@ function navigateTo(view, opts) {
   highlightTime = opts.highlightTime || null;
   renderCurrentView();
 }
+window.navigateTo = navigateTo;
 
 // ─── Render Current View (master renderer) ───
 function renderCurrentView() {
