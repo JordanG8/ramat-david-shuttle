@@ -148,7 +148,7 @@ let DATA = {
   ],
   bus_routes: [
     {
-      name: "בסיס - רכבת",
+      name: "בסיס - רכבת כפר יהושע",
       description: "תחנות עצירה מהבסיס לרכבת",
       stops: [
         "רחבת היסעים",
@@ -181,7 +181,7 @@ let DATA = {
       ],
     },
     {
-      name: "רכבת - בסיס",
+      name: "רכבת כפר יהושע - בסיס",
       description: "תחנות עצירה מהרכבת לבסיס",
       stops: [
         "רכבת כפר יהושע",
@@ -281,7 +281,7 @@ let DATA = {
       ],
     },
     {
-      name: "צומת - בסיס",
+      name: "צומת רמת דוד - בסיס",
       description: "שאטל צומת רמת דוד לבסיס",
       stops: ["צומת רמת דוד", "רחבת היסעים"],
       departure_times_str:
@@ -2301,7 +2301,7 @@ function renderNavButtons() {
     },
     {
       icon: '<span class="material-symbols-rounded">alt_route</span>',
-      label: "צומת - בסיס",
+      label: "צומת רמת דוד - בסיס",
       sub: "שאטל מהצומת לבסיס",
       view: "tzomet",
       iconClass: "nav-btn-icon-wrap--tzomet",
