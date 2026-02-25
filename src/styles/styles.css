@@ -227,6 +227,15 @@ body::before {
   overflow: hidden;
 }
 
+/* ── Israeli Railways icon ── */
+.railway-icon {
+  width: 1.15em;
+  height: 1.15em;
+  vertical-align: middle;
+  filter: brightness(0) invert(1);
+  display: inline-block;
+}
+
 /* ── Title Bar ── */
 .board-title-bar {
   display: flex;
@@ -243,7 +252,7 @@ body::before {
 }
 
 .board-title-icon {
-  font-size: 1.2rem;
+  font-size: 1.15rem;
   opacity: 0.7;
 }
 
@@ -265,140 +274,41 @@ body::before {
 }
 
 /* ══════════════════════════════════════
-   HERO — next departure (red card)
+   TABLE — column headers
    ══════════════════════════════════════ */
-.board-hero {
-  display: flex;
+.board-head {
+  display: grid;
+  grid-template-columns: 60px 1fr 72px;
   align-items: center;
-  justify-content: space-between;
-  padding: 16px 20px;
-  cursor: pointer;
-  user-select: none;
-  background: var(--accent);
-  transition: background 0.15s ease;
+  padding: 7px 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.board-hero:active {
-  background: #b71c1c;
-}
-
-/* Right side: icon + route info */
-.board-hero-right {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  min-width: 0;
-}
-
-.board-hero-icon-wrap {
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  opacity: 0.85;
-}
-
-.board-hero-icon-wrap .material-symbols-rounded {
-  font-size: 1.2rem;
-  color: #fff;
-}
-
-.board-hero-info {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  min-width: 0;
-}
-
-.board-hero-label {
-  font-size: 0.62rem;
+.board-col {
+  font-family: var(--font-display);
+  font-size: 0.65rem;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: rgba(255, 255, 255, 0.55);
-  line-height: 1.3;
+  color: rgba(255, 255, 255, 0.4);
+  letter-spacing: 0.03em;
 }
 
-.board-hero-route {
-  font-family: var(--font-display);
-  font-size: 0.95rem;
-  font-weight: 800;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  line-height: 1.35;
+.board-col-time {
+  text-align: center;
 }
 
-.board-hero-time {
-  font-size: 0.72rem;
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.55);
-  line-height: 1.3;
-}
-
-/* Left side: big ETA number */
-.board-hero-eta {
-  display: flex;
-  align-items: baseline;
-  gap: 3px;
-  flex-shrink: 0;
-  padding-right: 12px;
-}
-
-.board-hero-num {
-  font-family: var(--font-display);
-  font-size: 2.8rem;
-  font-weight: 900;
-  line-height: 1;
-  letter-spacing: -0.04em;
-}
-
-.board-hero-unit {
-  font-family: var(--font-display);
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: rgba(255, 255, 255, 0.6);
-}
-
-.board-hero-now {
-  font-family: var(--font-display);
-  font-size: 1.6rem;
-  font-weight: 900;
-  line-height: 1;
-  animation: nowBlink 1.2s ease-in-out infinite;
-}
-
-@keyframes nowBlink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
-}
-
-/* Hero urgent */
-.board-hero--urgent {
-  background: #b71c1c;
-}
-
-.board-hero--urgent .board-hero-num,
-.board-hero--urgent .board-hero-now {
-  color: #ffe082;
+.board-col-eta {
+  text-align: center;
 }
 
 /* ══════════════════════════════════════
-   LIST — remaining departures
+   TABLE — rows (all equal)
    ══════════════════════════════════════ */
-.board-list {
-  display: flex;
-  flex-direction: column;
-}
-
 .board-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: 60px 1fr 72px;
   align-items: center;
-  justify-content: space-between;
-  padding: 10px 20px 10px 16px;
+  padding: 11px 16px;
   cursor: pointer;
   user-select: none;
   transition: background 0.15s ease;
@@ -409,8 +319,8 @@ body::before {
   border-bottom: none;
 }
 
-.board-row--alt {
-  background: rgba(255, 255, 255, 0.025);
+.board-row:nth-child(even) {
+  background: rgba(255, 255, 255, 0.02);
 }
 
 .board-row:hover {
@@ -421,78 +331,73 @@ body::before {
   background: rgba(255, 255, 255, 0.1);
 }
 
-/* Right side: icon + destination */
-.board-row-right {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-width: 0;
-}
-
-.board-row-icon {
-  width: 30px;
-  height: 30px;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.board-row-icon .material-symbols-rounded {
-  font-size: 1rem;
-  color: #fff;
-}
-
-.board-row-dest {
-  font-size: 0.84rem;
-  font-weight: 600;
+/* Cell base */
+.board-cell {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  color: rgba(255, 255, 255, 0.9);
 }
 
-/* Left side: time + ETA pill */
-.board-row-left {
+/* Time column */
+.board-cell-time {
+  font-family: var(--font-display);
+  font-size: 0.88rem;
+  font-weight: 700;
+  text-align: center;
+  direction: ltr;
+  color: rgba(255, 255, 255, 0.95);
+}
+
+/* Route column */
+.board-cell-route {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.88);
+  padding: 0 8px;
+}
+
+.board-cell-icon {
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  opacity: 0.6;
+  font-size: 1.1rem;
 }
 
-.board-row-time {
-  font-size: 0.78rem;
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.4);
-  direction: ltr;
+.board-cell-icon .material-symbols-rounded {
+  font-size: 1.15rem;
 }
 
-.board-row-eta {
+.board-cell-icon .railway-icon {
+  width: 1.1em;
+  height: 1.1em;
+  opacity: 0.85;
+}
+
+/* ETA column */
+.board-cell-eta {
   font-family: var(--font-display);
-  font-size: 0.78rem;
+  font-size: 0.82rem;
   font-weight: 800;
-  white-space: nowrap;
-  min-width: 52px;
   text-align: center;
-  padding: 3px 8px;
+  padding: 4px 6px;
   border-radius: 6px;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.07);
   color: rgba(255, 255, 255, 0.85);
 }
 
-.board-row-eta--urgent {
-  background: rgba(198, 40, 40, 0.5);
-  color: #ffe082;
+.board-cell-eta--urgent {
+  background: var(--accent);
+  color: #fff;
+  font-weight: 900;
 }
 
 /* Urgent row */
 .board-row--urgent {
-  background: rgba(198, 40, 40, 0.08);
-}
-
-.board-row--urgent.board-row--alt {
-  background: rgba(198, 40, 40, 0.1);
+  background: rgba(198, 40, 40, 0.06) !important;
 }
 
 /* ── Empty State ── */
@@ -667,6 +572,16 @@ body::before {
 
 .nav-btn:hover .nav-btn-icon-wrap {
   transform: scale(1.08);
+}
+
+.nav-btn-icon .railway-icon {
+  width: 1.3rem;
+  height: 1.3rem;
+}
+
+.top-tab-icon .railway-icon {
+  width: 1.15rem;
+  height: 1.15rem;
 }
 
 /* Per-route icon colors */
@@ -1886,30 +1801,20 @@ body::before {
     border-radius: 11px;
   }
 
-  .board-hero {
-    padding: 14px 14px;
-  }
-
-  .board-hero-num {
-    font-size: 2.4rem;
-  }
-
-  .board-hero-route {
-    font-size: 0.88rem;
-  }
-
+  .board-head,
   .board-row {
-    padding: 9px 14px 9px 12px;
+    grid-template-columns: 52px 1fr 64px;
+    padding-left: 12px;
+    padding-right: 12px;
   }
 
-  .board-row-dest {
+  .board-cell-route {
     font-size: 0.8rem;
+    gap: 6px;
   }
 
-  .board-row-icon {
-    width: 28px;
-    height: 28px;
-    border-radius: 7px;
+  .board-cell-time {
+    font-size: 0.82rem;
   }
 
   .timeline {

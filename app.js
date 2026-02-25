@@ -39,6 +39,9 @@ function esc(str) {
   return div.innerHTML.replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
 
+// Israeli Railways logo (inline, uses currentColor)
+const railwayIcon = `<img class="railway-icon" src="Israeli railways.svg" alt="" />`;
+
 const chevronSVG = `<svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>`;
 const smallChevronSVG = `<svg class="tl-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>`;
 const arrowSVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>`;
@@ -512,15 +515,15 @@ function isEveningOnCallActive() {
 }
 
 // ─── Route meta helper ───
-function getRouteMeta(view) {
-  const meta = {
-    train:    { icon: "train",          color: "#1565c0", label: "רכבת" },
-    tzomet:   { icon: "alt_route",      color: "#00796b", label: "צומת" },
-    internal: { icon: "directions_bus",  color: "#2e7d32", label: "פנים" },
-    hada:     { icon: "restaurant",     color: "#e65100", label: 'חד"א' },
-    oncall:   { icon: "call",           color: "#6a1b9a", label: "קריאה" },
+function getRouteIcon(view) {
+  if (view === "train") return railwayIcon;
+  const icons = {
+    tzomet:   "alt_route",
+    internal: "directions_bus",
+    hada:     "restaurant",
+    oncall:   "call",
   };
-  return meta[view] || meta.train;
+  return `<span class="material-symbols-rounded">${icons[view] || "airport_shuttle"}</span>`;
 }
 
 // ─── Render Departure Board ───
@@ -546,53 +549,28 @@ function renderDepartureBoard() {
       <span class="board-empty-sub">היציאות הבאות יופיעו כאן כשיהיו שאטלים בשעתיים הקרובות</span>
     </div>`;
   } else {
-    // ── Hero: next departure ──
-    const hero = departures[0];
-    const heroMeta = getRouteMeta(hero.view);
-    const heroUrgent = hero.diff <= 5;
-    const heroNow = hero.diff === 0;
-
-    html += `<div class="board-hero${heroUrgent ? ' board-hero--urgent' : ''}" onclick="navigateTo('${hero.view}', { highlightTime: '${hero.time}' })">
-      <div class="board-hero-right">
-        <div class="board-hero-icon-wrap" style="background:${heroMeta.color}">
-          <span class="material-symbols-rounded">${heroMeta.icon}</span>
-        </div>
-        <div class="board-hero-info">
-          <span class="board-hero-label">השאטל הבא</span>
-          <span class="board-hero-route">${esc(hero.routeLabel)}</span>
-          <span class="board-hero-time">יציאה ב-${esc(hero.time)}</span>
-        </div>
-      </div>
-      <div class="board-hero-eta">
-        ${heroNow
-          ? '<span class="board-hero-now">עכשיו!</span>'
-          : `<span class="board-hero-num">${hero.diff}</span><span class="board-hero-unit">דק׳</span>`
-        }
-      </div>
+    // ── Column headers ──
+    html += `<div class="board-head">
+      <span class="board-col board-col-time">שעה</span>
+      <span class="board-col board-col-route">קו</span>
+      <span class="board-col board-col-eta">המתנה</span>
     </div>`;
 
-    // ── Remaining rows ──
-    if (departures.length > 1) {
-      html += `<div class="board-list">`;
-      departures.slice(1).forEach((dep, i) => {
-        const meta = getRouteMeta(dep.view);
-        const isUrgent = dep.diff <= 5;
-        const isNow = dep.diff === 0;
-        html += `<div class="board-row${isUrgent ? ' board-row--urgent' : ''}${i % 2 === 0 ? ' board-row--alt' : ''}" onclick="navigateTo('${dep.view}', { highlightTime: '${dep.time}' })">
-          <div class="board-row-right">
-            <span class="board-row-icon" style="background:${meta.color}">
-              <span class="material-symbols-rounded">${meta.icon}</span>
-            </span>
-            <span class="board-row-dest">${esc(dep.routeLabel)}</span>
-          </div>
-          <div class="board-row-left">
-            <span class="board-row-time">${esc(dep.time)}</span>
-            <span class="board-row-eta${isUrgent ? ' board-row-eta--urgent' : ''}">${isNow ? 'עכשיו!' : dep.diff + ' דק׳'}</span>
-          </div>
-        </div>`;
-      });
-      html += `</div>`;
-    }
+    // ── Departure rows (all equal) ──
+    departures.forEach((dep, i) => {
+      const isUrgent = dep.diff <= 5;
+      const isNow = dep.diff === 0;
+      html += `<div class="board-row${isUrgent ? ' board-row--urgent' : ''}" onclick="navigateTo('${dep.view}', { highlightTime: '${dep.time}' })">
+        <span class="board-cell board-cell-time">${esc(dep.time)}</span>
+        <span class="board-cell board-cell-route">
+          <span class="board-cell-icon">${getRouteIcon(dep.view)}</span>
+          ${esc(dep.routeLabel)}
+        </span>
+        <span class="board-cell board-cell-eta${isUrgent ? ' board-cell-eta--urgent' : ''}">
+          ${isNow ? 'עכשיו!' : dep.diff + ' דק׳'}
+        </span>
+      </div>`;
+    });
   }
 
   html += `</div>`;
@@ -603,7 +581,7 @@ function renderDepartureBoard() {
 function renderNavButtons() {
   const buttons = [
     {
-      icon: '<span class="material-symbols-rounded">train</span>',
+      icon: railwayIcon,
       label: "בסיס - רכבת כפר יהושע",
       sub: "נסיעות לרכבת הגלילים",
       view: "train",
@@ -685,7 +663,7 @@ function renderHomePage() {
 function renderTopTabs() {
   const tabs = [
     { icon: "home", label: "בית", view: "home" },
-    { icon: "train", label: "רכבת", view: "train" },
+    { icon: "railway", label: "רכבת", view: "train" },
     { icon: "alt_route", label: "צומת", view: "tzomet" },
     { icon: "directions_bus", label: "פנים כנף", view: "internal" },
     { icon: "restaurant", label: 'חד"א', view: "hada" },
@@ -696,8 +674,11 @@ function renderTopTabs() {
   let html = `<div class="top-tabs">`;
   tabs.forEach((tab) => {
     const active = tab.view === currentView ? " top-tab-active" : "";
+    const iconHtml = tab.icon === "railway"
+      ? `<span class="top-tab-icon">${railwayIcon}</span>`
+      : `<span class="material-symbols-rounded top-tab-icon">${tab.icon}</span>`;
     html += `<button class="top-tab${active}" onclick="navigateTo('${tab.view}')">
-      <span class="material-symbols-rounded top-tab-icon">${tab.icon}</span>
+      ${iconHtml}
       <span class="top-tab-label">${tab.label}</span>
     </button>`;
   });
