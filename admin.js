@@ -3,6 +3,8 @@
 // ═══════════════════════════════════════════
 // Depends on app.js being loaded first (DATA, OLD_ROUTES globals)
 
+import "./src/styles/admin.css";
+
 (function AdminDashboard() {
   "use strict";
 
@@ -44,11 +46,13 @@
   // AUTHENTICATION
   // ═══════════════════════════════════════════
 
-  function getPassword() {
-    return localStorage.getItem(PASSWORD_KEY) || DEFAULT_PWD;
-  }
-  function isLoggedIn() {
-    return sessionStorage.getItem(SESSION_KEY) === "1";
+  async function checkAuth() {
+    try {
+      const res = await fetch("/api/verify");
+      return res.ok;
+    } catch (e) {
+      return false;
+    }
   }
 
   async function doLogin(pwd) {
@@ -58,32 +62,36 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password: pwd }),
       });
-      if (res.ok) {
-        sessionStorage.setItem(SESSION_KEY, "1");
-        localStorage.setItem(PASSWORD_KEY, pwd); // Store for subsequent API calls
-        return true;
-      }
-      return false;
+      return res.ok;
     } catch (e) {
       console.error("Login error", e);
       return false;
     }
   }
 
-  function doLogout() {
-    sessionStorage.removeItem(SESSION_KEY);
-    localStorage.removeItem(PASSWORD_KEY);
+  async function doLogout() {
+    try {
+      await fetch("/api/logout", { method: "POST" });
+    } catch (e) {
+      console.error("Logout error", e);
+    }
     location.reload();
   }
 
   var loginScreen = $("login-screen");
   var dashboard = $("dashboard");
 
-  if (isLoggedIn()) {
-    loginScreen.style.display = "none";
-    dashboard.style.display = "flex";
-    bootDashboard();
-  }
+  // Check auth on load
+  checkAuth().then((isLoggedIn) => {
+    if (isLoggedIn) {
+      loginScreen.style.display = "none";
+      dashboard.style.display = "flex";
+      bootDashboard();
+    } else {
+      loginScreen.style.display = "flex";
+      dashboard.style.display = "none";
+    }
+  });
 
   $("login-form").addEventListener("submit", async function (e) {
     e.preventDefault();
@@ -268,9 +276,10 @@
       const res = await fetch("/api/data", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ data: data, password: getPassword() }),
+        body: JSON.stringify({ data: data }),
       });
       if (!res.ok) {
+        if (res.status === 401) doLogout();
         toast("שגיאה בשמירת הנתונים", "error");
       }
     } catch (e) {
@@ -1213,15 +1222,14 @@
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             action: "change_password",
-            password: o,
             newPassword: n,
           }),
         });
         if (res.ok) {
-          localStorage.setItem(PASSWORD_KEY, n);
           $("old-pwd").value = $("new-pwd").value = $("confirm-pwd").value = "";
           toast("הסיסמה עודכנה בהצלחה!", "success");
         } else {
+          if (res.status === 401) doLogout();
           toast("שגיאה בעדכון הסיסמה", "error");
         }
       } catch (e) {
@@ -1240,7 +1248,6 @@
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             action: "reset_data",
-            password: getPassword(),
           }),
         });
         if (res.ok) {
@@ -1250,6 +1257,7 @@
             location.reload();
           }, 1200);
         } else {
+          if (res.status === 401) doLogout();
           toast("שגיאה באיפוס הנתונים", "error");
         }
       } catch (e) {

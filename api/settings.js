@@ -1,23 +1,33 @@
 import { sql } from "@vercel/postgres";
+import jwt from "jsonwebtoken";
+import { parse } from "cookie";
+import bcrypt from "bcryptjs";
+
+const JWT_SECRET = process.env.JWT_SECRET || "fallback_secret_for_dev";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { action, password, newPassword } = req.body;
+  const { action, newPassword } = req.body;
 
-  if (!action || !password) {
-    return res.status(400).json({ error: "Action and password are required" });
+  if (!action) {
+    return res.status(400).json({ error: "Action is required" });
   }
 
   try {
-    // Verify current password
-    const { rows: pwdRows } = await sql`
-      SELECT value FROM app_settings WHERE key = 'admin_password'
-    `;
+    // Verify JWT token
+    const cookies = parse(req.headers.cookie || "");
+    const token = cookies.auth_token;
 
-    if (pwdRows.length === 0 || pwdRows[0].value !== password) {
+    if (!token) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    try {
+      jwt.verify(token, JWT_SECRET);
+    } catch (err) {
       return res.status(401).json({ error: "Unauthorized" });
     }
 
@@ -26,9 +36,11 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: "New password is required" });
       }
 
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+
       await sql`
         INSERT INTO app_settings (key, value)
-        VALUES ('admin_password', ${newPassword})
+        VALUES ('admin_password', ${hashedPassword})
         ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
       `;
 

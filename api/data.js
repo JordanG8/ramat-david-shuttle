@@ -1,4 +1,8 @@
 import { sql } from "@vercel/postgres";
+import jwt from "jsonwebtoken";
+import { parse } from "cookie";
+
+const JWT_SECRET = process.env.JWT_SECRET || "fallback_secret_for_dev";
 
 export default async function handler(req, res) {
   if (req.method === "GET") {
@@ -12,26 +16,34 @@ export default async function handler(req, res) {
       }
 
       const data = JSON.parse(rows[0].value);
-      res.setHeader("Cache-Control", "no-store, max-age=0");
+      res.setHeader(
+        "Cache-Control",
+        "public, s-maxage=60, stale-while-revalidate=300",
+      );
       return res.status(200).json(data);
     } catch (error) {
       console.error("Error fetching data:", error);
       return res.status(500).json({ error: "Internal server error" });
     }
   } else if (req.method === "POST") {
-    const { data, password } = req.body;
+    const { data } = req.body;
 
-    if (!data || !password) {
-      return res.status(400).json({ error: "Data and password are required" });
+    if (!data) {
+      return res.status(400).json({ error: "Data is required" });
     }
 
     try {
-      // Verify password first
-      const { rows: pwdRows } = await sql`
-        SELECT value FROM app_settings WHERE key = 'admin_password'
-      `;
+      // Verify JWT token
+      const cookies = parse(req.headers.cookie || "");
+      const token = cookies.auth_token;
 
-      if (pwdRows.length === 0 || pwdRows[0].value !== password) {
+      if (!token) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      try {
+        jwt.verify(token, JWT_SECRET);
+      } catch (err) {
         return res.status(401).json({ error: "Unauthorized" });
       }
 

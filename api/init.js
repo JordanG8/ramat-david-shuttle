@@ -1,4 +1,5 @@
 import { sql } from "@vercel/postgres";
+import bcrypt from "bcryptjs";
 
 export default async function handler(req, res) {
   try {
@@ -11,9 +12,12 @@ export default async function handler(req, res) {
     `;
 
     // Insert default password if not exists
+    const defaultPassword = "admin2024!";
+    const hashedPassword = await bcrypt.hash(defaultPassword, 10);
+
     await sql`
       INSERT INTO app_settings (key, value)
-      VALUES ('admin_password', 'admin2024!')
+      VALUES ('admin_password', ${hashedPassword})
       ON CONFLICT (key) DO NOTHING;
     `;
 

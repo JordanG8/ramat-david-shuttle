@@ -1,4 +1,9 @@
 import { sql } from "@vercel/postgres";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import { serialize } from "cookie";
+
+const JWT_SECRET = process.env.JWT_SECRET || "fallback_secret_for_dev";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -23,10 +28,31 @@ export default async function handler(req, res) {
     }
 
     const storedPassword = rows[0].value;
+    
+    // Check if the stored password is a bcrypt hash (starts with $2a$ or $2b$)
+    // If not, it's the old plain text password and we should compare it directly
+    // and ideally hash it, but for now just compare.
+    let isMatch = false;
+    if (storedPassword.startsWith("$2a$") || storedPassword.startsWith("$2b$")) {
+      isMatch = await bcrypt.compare(password, storedPassword);
+    } else {
+      isMatch = password === storedPassword;
+    }
 
-    if (password === storedPassword) {
-      // In a real app, you'd return a JWT or session token here.
-      // For this simple app, we'll just return success.
+    if (isMatch) {
+      const token = jwt.sign({ role: "admin" }, JWT_SECRET, {
+        expiresIn: "7d",
+      });
+
+      const cookie = serialize("auth_token", token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        maxAge: 60 * 60 * 24 * 7, // 1 week
+        path: "/",
+      });
+
+      res.setHeader("Set-Cookie", cookie);
       return res.status(200).json({ success: true });
     } else {
       return res.status(401).json({ error: "Invalid password" });
