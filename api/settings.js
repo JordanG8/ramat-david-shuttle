@@ -27,13 +27,9 @@ export default async function handler(req, res) {
       }
 
       await sql`
-<<<<<<< HEAD
         INSERT INTO app_settings (key, value)
         VALUES ('admin_password', ${newPassword})
         ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
-=======
-        UPDATE app_settings SET value = ${newPassword} WHERE key = 'admin_password'
->>>>>>> 2290907d01a2edbaf7969e4527bf77e3e8148f8c
       `;
 
       return res.status(200).json({ success: true });
@@ -42,7 +38,6 @@ export default async function handler(req, res) {
       const defaultData = JSON.stringify({
         units: [],
         bus_routes: [],
-<<<<<<< HEAD
         old_routes: [],
       });
 
@@ -50,13 +45,6 @@ export default async function handler(req, res) {
         INSERT INTO app_settings (key, value)
         VALUES ('app_data', ${defaultData})
         ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
-=======
-        schedules: [],
-      });
-
-      await sql`
-        UPDATE app_settings SET value = ${defaultData} WHERE key = 'app_data'
->>>>>>> 2290907d01a2edbaf7969e4527bf77e3e8148f8c
       `;
 
       return res.status(200).json({ success: true });

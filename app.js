@@ -295,11 +295,7 @@ let DATA = {
 };
 
 // ─── Old Routes Data (full schedule from wing_stations) ───
-<<<<<<< HEAD
 let OLD_ROUTES = [
-=======
-const DEFAULT_OLD_ROUTES = [
->>>>>>> 2290907d01a2edbaf7969e4527bf77e3e8148f8c
   {
     name: "קו 1 - ראשון עד חמישי",
     phone: "",
@@ -2764,40 +2760,25 @@ window.addEventListener("focus", () => {
 
 // ─── Init ───
 document.addEventListener("DOMContentLoaded", async () => {
-<<<<<<< HEAD
+  if (!document.getElementById("app-content")) return; // Not the public page
+
   try {
     const res = await fetch("/api/data?t=" + new Date().getTime());
     if (res.ok) {
       const dbData = await res.json();
-      if (dbData.units) DATA.units = dbData.units;
-      if (dbData.bus_routes) DATA.bus_routes = dbData.bus_routes;
-      if (dbData.old_routes) OLD_ROUTES = dbData.old_routes;
+      if (dbData.units && dbData.units.length > 0) {
+        DATA.units = dbData.units;
+      }
+      if (dbData.bus_routes && dbData.bus_routes.length > 0) {
+        DATA.bus_routes = dbData.bus_routes;
+      }
+      if (dbData.old_routes && dbData.old_routes.length > 0) {
+        OLD_ROUTES = dbData.old_routes;
+      }
     }
   } catch (e) {
     console.error("Failed to load data from API, using fallback", e);
   }
-=======
-  if (!document.getElementById("app-content")) return; // Not the public page
-
-  try {
-    const res = await fetch("/api/data");
-    if (res.ok) {
-      const serverData = await res.json();
-      if (serverData.units && serverData.units.length > 0) {
-        DATA.units = serverData.units;
-      }
-      if (serverData.bus_routes && serverData.bus_routes.length > 0) {
-        DATA.bus_routes = serverData.bus_routes;
-      }
-      if (serverData.old_routes && serverData.old_routes.length > 0) {
-        OLD_ROUTES = serverData.old_routes;
-      }
-    }
-  } catch (e) {
-    console.error("Error loading data from server", e);
-  }
-
->>>>>>> 2290907d01a2edbaf7969e4527bf77e3e8148f8c
   renderCurrentView();
   startCountdownTimer();
 });
