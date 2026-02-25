@@ -249,19 +249,20 @@ body::before {
   align-items: center;
   justify-content: space-between;
   padding: 10px 12px;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(180, 40, 40, 0.55);
   border-radius: 10px;
   cursor: pointer;
-  transition: background 0.2s ease;
+  transition: background 0.2s ease, box-shadow 0.2s ease;
   user-select: none;
+  border: 1px solid rgba(255, 80, 80, 0.15);
 }
 
 .board-row:hover {
-  background: rgba(255, 255, 255, 0.14);
+  background: rgba(180, 40, 40, 0.7);
 }
 
 .board-row:active {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(180, 40, 40, 0.8);
   transform: scale(0.985);
 }
 
@@ -318,8 +319,8 @@ body::before {
 
 /* Urgent row */
 .board-row-urgent {
-  background: rgba(255, 152, 0, 0.08);
-  border: 1px solid rgba(255, 152, 0, 0.18);
+  background: rgba(200, 30, 30, 0.75);
+  border: 1px solid rgba(255, 100, 100, 0.3);
 }
 
 .board-row-urgent .board-row-mins {
