@@ -3,7 +3,8 @@
     "allow": [
       "Bash(cd:*)",
       "Bash(ls:*)",
-      "Bash(cd \"C:\\\\Users\\\\yospe\\\\OneDrive\\\\Documents\\\\GitHub\\\\ramat-david-shuttle\" && npx vite@5 --host 2>&1)"
+      "Bash(cd \"C:\\\\Users\\\\yospe\\\\OneDrive\\\\Documents\\\\GitHub\\\\ramat-david-shuttle\" && npx vite@5 --host 2>&1)",
+      "Bash(cd C:\\\\Users\\\\yospe\\\\OneDrive\\\\Documents\\\\GitHub\\\\ramat-david-shuttle:*)"
     ]
   }
 }

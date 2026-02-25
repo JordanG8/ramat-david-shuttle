@@ -40,7 +40,7 @@ function esc(str) {
 }
 
 // Israeli Railways logo (inline, uses currentColor)
-const railwayIcon = `<img class="railway-icon" src="Israeli railways.svg" alt="" />`;
+const railwayIcon = `<img class="railway-icon" src="israeli-railways.svg" alt="" />`;
 
 const chevronSVG = `<svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>`;
 const smallChevronSVG = `<svg class="tl-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>`;
