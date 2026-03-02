@@ -108,7 +108,15 @@ function renderStationsHtml() {
 }
 
 // ─── Hub-and-Spoke State ───
-const VALID_VIEWS = ["home", "train", "tzomet", "internal", "hada", "oncall", "info"];
+const VALID_VIEWS = [
+  "home",
+  "train",
+  "tzomet",
+  "internal",
+  "hada",
+  "oncall",
+  "info",
+];
 
 function getViewFromHash() {
   const hash = window.location.hash.replace("#", "");
@@ -525,10 +533,10 @@ function isEveningOnCallActive() {
 function getRouteIcon(view) {
   if (view === "train") return railwayIcon;
   const icons = {
-    tzomet:   "alt_route",
+    tzomet: "alt_route",
     internal: "directions_bus",
-    hada:     "restaurant",
-    oncall:   "call",
+    hada: "restaurant",
+    oncall: "call",
   };
   return `<span class="material-symbols-rounded">${icons[view] || "airport_shuttle"}</span>`;
 }
@@ -546,7 +554,7 @@ function renderDepartureBoard() {
       <span class="board-title-text">לוח יציאות שאטלים</span>
       <span class="estimated-tag board-estimated">זמן משוער</span>
     </div>
-    <span class="live-dot${departures.length > 0 ? ' urgent' : ' dead'}"></span>
+    <span class="live-dot${departures.length > 0 ? " urgent" : " dead"}"></span>
   </div>`;
 
   if (departures.length === 0) {
@@ -567,14 +575,14 @@ function renderDepartureBoard() {
     departures.forEach((dep, i) => {
       const isUrgent = dep.diff <= 5;
       const isNow = dep.diff === 0;
-      html += `<div class="board-row${isUrgent ? ' board-row--urgent' : ''}" onclick="navigateTo('${dep.view}', { highlightTime: '${dep.time}' })">
+      html += `<div class="board-row${isUrgent ? " board-row--urgent" : ""}" onclick="navigateTo('${dep.view}', { highlightTime: '${dep.time}' })">
         <span class="board-cell board-cell-time">${esc(dep.time)}</span>
         <span class="board-cell board-cell-route">
           <span class="board-cell-icon">${getRouteIcon(dep.view)}</span>
           ${esc(dep.routeLabel)}
         </span>
-        <span class="board-cell board-cell-eta${isUrgent ? ' board-cell-eta--urgent' : ''}">
-          ${isNow ? 'עכשיו!' : dep.diff + ' דק׳'}
+        <span class="board-cell board-cell-eta${isUrgent ? " board-cell-eta--urgent" : ""}">
+          ${isNow ? "עכשיו!" : dep.diff + " דק׳"}
         </span>
       </div>`;
     });
@@ -632,6 +640,12 @@ function renderNavButtons() {
   ];
 
   let html = `<div class="nav-card">`;
+  html += `<div class="nav-card-brand">
+    <div class="nav-card-brand-text">
+      <div class="nav-card-brand-title">אפליקציית השאטלים</div>
+      <div class="nav-card-brand-sub">בסיס כנף 1 — רמת דוד</div>
+    </div>
+  </div>`;
   html += `<div class="nav-card-cta">
     <span class="material-symbols-rounded nav-card-title-icon">explore</span>
     <h2 class="nav-card-title">לאן את.ה צריך להגיע?</h2>
@@ -679,9 +693,10 @@ function renderTopTabs() {
   let html = `<div class="top-tabs">`;
   tabs.forEach((tab) => {
     const active = tab.view === currentView ? " top-tab-active" : "";
-    const iconHtml = tab.icon === "railway"
-      ? `<span class="top-tab-icon">${railwayIcon}</span>`
-      : `<span class="material-symbols-rounded top-tab-icon">${tab.icon}</span>`;
+    const iconHtml =
+      tab.icon === "railway"
+        ? `<span class="top-tab-icon">${railwayIcon}</span>`
+        : `<span class="material-symbols-rounded top-tab-icon">${tab.icon}</span>`;
     html += `<button class="top-tab${active}" onclick="navigateTo('${tab.view}')">
       ${iconHtml}
       <span class="top-tab-label">${tab.label}</span>
@@ -1078,7 +1093,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   const appContent = document.getElementById("app-content");
   if (!appContent) return; // Not the public page
 
-  appContent.innerHTML = '<div style="text-align:center; padding: 2rem;">טוען נתונים...</div>';
+  appContent.innerHTML =
+    '<div style="text-align:center; padding: 2rem;">טוען נתונים...</div>';
 
   try {
     const res = await fetch("/api/data");
@@ -1100,7 +1116,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   } catch (e) {
     console.error("Failed to load data from API, using fallback", e);
     const toast = document.createElement("div");
-    toast.style.cssText = "position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:#f44336; color:white; padding:10px 20px; border-radius:4px; z-index:9999; font-family:Rubik,sans-serif;";
+    toast.style.cssText =
+      "position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:#f44336; color:white; padding:10px 20px; border-radius:4px; z-index:9999; font-family:Rubik,sans-serif;";
     toast.textContent = "שגיאה בטעינת נתונים עדכניים. מוצגים נתוני גיבוי.";
     document.body.appendChild(toast);
     setTimeout(() => toast.remove(), 5000);
