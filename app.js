@@ -547,6 +547,12 @@ function renderDepartureBoard() {
 
   let html = `<div class="board-section">`;
 
+  // ── App brand ──
+  html += `<div class="board-brand">
+    <div class="board-brand-title">שאטל 1</div>
+    <div class="board-brand-sub">אפליקציית השאטלים של בסיס כנף 1 — רמת דוד</div>
+  </div>`;
+
   // ── Title bar ──
   html += `<div class="board-title-bar">
     <div class="board-title-right">
@@ -640,12 +646,6 @@ function renderNavButtons() {
   ];
 
   let html = `<div class="nav-card">`;
-  html += `<div class="nav-card-brand">
-    <div class="nav-card-brand-text">
-      <div class="nav-card-brand-title">אפליקציית השאטלים</div>
-      <div class="nav-card-brand-sub">בסיס כנף 1 — רמת דוד</div>
-    </div>
-  </div>`;
   html += `<div class="nav-card-cta">
     <span class="material-symbols-rounded nav-card-title-icon">explore</span>
     <h2 class="nav-card-title">לאן את.ה צריך להגיע?</h2>
@@ -669,10 +669,6 @@ function renderNavButtons() {
 // ─── Render Home Page ───
 function renderHomePage() {
   let html = "";
-  html += `<div class="app-brand-header">
-    <div class="app-brand-title">שאטל 1</div>
-    <div class="app-brand-sub">אפליקציית השאטלים של בסיס כנף 1 — רמת דוד</div>
-  </div>`;
   html += renderDepartureBoard();
   html += renderNavButtons();
   return html;
