@@ -250,7 +250,6 @@ import "./src/styles/admin.css";
     dirtyRoutes = false;
     dirtyRouteIndices.clear();
     updateSaveStatus();
-    renderRoutesTab();
   }
 
   async function persistSchedules() {
@@ -637,14 +636,14 @@ import "./src/styles/admin.css";
           (ri === 0 ? " open" : "") +
           dirtyClass +
           '">' +
-          '<div class="route-editor-header"><div class="route-editor-title"><span class="route-badge">' +
+          '<div class="route-editor-header">' +
+          '<div class="route-editor-title"><span class="route-badge">' +
           (ri + 1) +
-          "</span><span>" +
-          esc(route.name) +
-          "</span></div>" +
-          '<div class="route-header-actions"><span class="dept-count-badge">' +
-          badge +
           "</span>" +
+          "<span>" + esc(route.name) + "</span>" +
+          '<span class="route-meta-badge">' + badge + "</span>" +
+          "</div>" +
+          '<div class="route-header-actions">' +
           '<button class="route-action-btn" data-act="dup-route" data-r="' + ri + '" title="שכפל קו">' +
           '<span class="material-symbols-rounded">content_copy</span></button>' +
           chevronSvg +
@@ -656,7 +655,8 @@ import "./src/styles/admin.css";
       })
       .join("");
 
-    bindRoutesEvents(c);
+    bindRoutesDelegatedOnce(c);
+    bindRoutesHeaderEvents(c);
   }
 
   function buildSubRouteHtml(ri, si, sr) {
@@ -849,13 +849,13 @@ import "./src/styles/admin.css";
     return si >= 0 ? editRoutes[ri].sub_routes[si] : editRoutes[ri];
   }
 
-  function bindRoutesEvents(c) {
-    c.querySelectorAll(".route-editor-header").forEach(function (h) {
-      h.addEventListener("click", function (e) {
-        if (e.target.closest("[data-act]")) return;
-        h.parentElement.classList.toggle("open");
-      });
-    });
+  // ─── Bind delegated events ONCE on the routes container ───
+  var routesDelegated = false;
+  var dragState = null;
+
+  function bindRoutesDelegatedOnce(c) {
+    if (routesDelegated) return;
+    routesDelegated = true;
 
     c.addEventListener("input", function (e) {
       var el = e.target,
@@ -914,6 +914,8 @@ import "./src/styles/admin.css";
     c.addEventListener("click", function (e) {
       var btn = e.target.closest("[data-act]");
       if (!btn) return;
+      // Ignore actions from other tabs (schedules use the same pattern)
+      if (!btn.closest("#routes-list")) return;
       var act = btn.getAttribute("data-act"),
         ri = +btn.getAttribute("data-r");
       var si = btn.getAttribute("data-s");
@@ -1014,7 +1016,6 @@ import "./src/styles/admin.css";
     });
 
     // ─── Drag-to-Reorder Stops ───
-    var dragState = null;
     c.addEventListener("dragstart", function (e) {
       var item = e.target.closest(".stop-editor-item[draggable]");
       if (!item) return;
@@ -1032,7 +1033,6 @@ import "./src/styles/admin.css";
       if (!item || !dragState) return;
       e.preventDefault();
       e.dataTransfer.dropEffect = "move";
-      // Show drop indicator
       var rect = item.getBoundingClientRect();
       var midY = rect.top + rect.height / 2;
       item.classList.remove("stop-drop-above", "stop-drop-below");
@@ -1050,7 +1050,6 @@ import "./src/styles/admin.css";
       var targetIdx = +item.getAttribute("data-i");
       var targetRi = +item.getAttribute("data-r");
       var targetSi = item.getAttribute("data-s") != null ? +item.getAttribute("data-s") : -1;
-      // Only reorder within same route/sub-route
       if (targetRi !== dragState.ri || targetSi !== dragState.si) return;
       if (targetIdx === dragState.idx) return;
       var rect = item.getBoundingClientRect();
@@ -1070,6 +1069,15 @@ import "./src/styles/admin.css";
       dragState = null;
       c.querySelectorAll(".stop-dragging, .stop-drop-above, .stop-drop-below").forEach(function (el) {
         el.classList.remove("stop-dragging", "stop-drop-above", "stop-drop-below");
+      });
+    });
+  }
+
+  function bindRoutesHeaderEvents(c) {
+    c.querySelectorAll(".route-editor-header").forEach(function (h) {
+      h.addEventListener("click", function (e) {
+        if (e.target.closest("[data-act]")) return;
+        h.parentElement.classList.toggle("open");
       });
     });
   }

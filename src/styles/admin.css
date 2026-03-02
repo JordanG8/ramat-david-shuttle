@@ -616,7 +616,17 @@ select.form-control { cursor: pointer; }
   color: var(--adm-navy);
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.route-meta-badge {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--adm-muted);
+  white-space: nowrap;
 }
 
 .route-badge {
@@ -811,7 +821,8 @@ select.form-control { cursor: pointer; }
 .route-header-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+  flex-shrink: 0;
 }
 
 .route-action-btn {
@@ -825,24 +836,14 @@ select.form-control { cursor: pointer; }
   align-items: center;
   justify-content: center;
   transition: color .15s, background .15s;
+  flex-shrink: 0;
 }
-.route-action-btn .material-symbols-rounded { font-size: 18px; }
+.route-action-btn .material-symbols-rounded { font-size: 16px; }
 .route-action-btn:hover { color: var(--adm-navy); background: rgba(0,0,0,.06); }
 
 /* ─── Per-Route Dirty Indicator ─── */
-.route-editor-card.route-dirty .route-editor-header {
-  position: relative;
-}
-.route-editor-card.route-dirty .route-editor-header::after {
-  content: "";
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: #f59e0b;
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  box-shadow: 0 0 0 2px rgba(245,158,11,.25);
+.route-editor-card.route-dirty .route-badge {
+  box-shadow: 0 0 0 2.5px #f59e0b;
 }
 
 /* ─── Tab Header Actions ─── */
@@ -954,4 +955,14 @@ select.form-control { cursor: pointer; }
   .form-row { grid-template-columns: 1fr; }
   .form-row.three-col { grid-template-columns: 1fr; }
   .settings-grid { grid-template-columns: 1fr; }
+
+  .route-editor-header { padding: 12px 14px; gap: 8px; }
+  .route-editor-title { font-size: 13px; gap: 6px; }
+  .route-editor-body { padding: 14px; gap: 14px; }
+  .route-badge { font-size: 10px; padding: 2px 6px; }
+  .route-meta-badge { font-size: 10px; }
+  .route-action-btn .material-symbols-rounded { font-size: 15px; }
+
+  .tab-header-actions { gap: 6px; }
+  .btn-ghost { font-size: 11px; padding: 5px 8px; }
 }
