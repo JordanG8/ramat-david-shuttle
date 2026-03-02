@@ -194,18 +194,20 @@ body {
 .adm-header-brand {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 6px;
 }
 
-.adm-header-title {
-  font-size: 16px;
-  font-weight: 700;
-  letter-spacing: -.3px;
+.adm-back-link {
+  text-decoration: none;
+  color: #fff;
+  opacity: 0.7;
+  transition: opacity 0.15s;
 }
-
-.adm-header-sub {
-  font-size: 12px;
-  opacity: .6;
+.adm-back-link:hover {
+  opacity: 1;
+}
+.adm-back-link .material-symbols-rounded {
+  font-size: 20px;
 }
 
 .adm-header-actions { display: flex; align-items: center; gap: 10px; }
