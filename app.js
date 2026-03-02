@@ -542,6 +542,9 @@ function getRouteIcon(view) {
 }
 
 // ─── Render Departure Board ───
+// PRESERVED: This section is intentionally kept. The departure board shows
+// upcoming shuttle departures in a live-updating board with brand header.
+// Temporarily disabled in renderHomePage() — do NOT delete.
 function renderDepartureBoard() {
   const departures = getAllUpcomingDepartures().slice(0, 6);
 
@@ -669,7 +672,9 @@ function renderNavButtons() {
 // ─── Render Home Page ───
 function renderHomePage() {
   let html = "";
-  html += renderDepartureBoard();
+  // NOTE: Departure board temporarily removed per commander request.
+  // The feature is fully functional — just uncomment to restore:
+  // html += renderDepartureBoard();
   html += renderNavButtons();
   return html;
 }
