@@ -108,7 +108,14 @@ function renderStationsHtml() {
 }
 
 // ─── Hub-and-Spoke State ───
-let currentView = "home"; // "home" | "train" | "tzomet" | "internal" | "hada" | "oncall" | "info"
+const VALID_VIEWS = ["home", "train", "tzomet", "internal", "hada", "oncall", "info"];
+
+function getViewFromHash() {
+  const hash = window.location.hash.replace("#", "");
+  return VALID_VIEWS.includes(hash) ? hash : "home";
+}
+
+let currentView = getViewFromHash();
 let highlightTime = null;
 
 // ─── Icons ───
@@ -724,8 +731,22 @@ function navigateTo(view, opts) {
   opts = opts || {};
   currentView = view;
   highlightTime = opts.highlightTime || null;
+  // Update URL hash (pushState for back-button support)
+  if (window.location.hash !== "#" + view) {
+    history.pushState(null, "", "#" + view);
+  }
   renderCurrentView();
 }
+
+// Handle browser back/forward navigation
+window.addEventListener("popstate", () => {
+  const view = getViewFromHash();
+  if (view !== currentView) {
+    currentView = view;
+    highlightTime = null;
+    renderCurrentView();
+  }
+});
 window.navigateTo = navigateTo;
 
 // ─── Render Current View (master renderer) ───
@@ -1085,6 +1106,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     toast.textContent = "שגיאה בטעינת נתונים עדכניים. מוצגים נתוני גיבוי.";
     document.body.appendChild(toast);
     setTimeout(() => toast.remove(), 5000);
+  }
+  // Set the hash to reflect the initial view
+  if (!window.location.hash) {
+    history.replaceState(null, "", "#home");
   }
   renderCurrentView();
   startCountdownTimer();

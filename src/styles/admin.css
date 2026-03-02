@@ -807,6 +807,126 @@ select.form-control { cursor: pointer; }
   font-size: 14px;
 }
 
+/* ─── Route Header Actions ─── */
+.route-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.route-action-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--adm-muted);
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color .15s, background .15s;
+}
+.route-action-btn .material-symbols-rounded { font-size: 18px; }
+.route-action-btn:hover { color: var(--adm-navy); background: rgba(0,0,0,.06); }
+
+/* ─── Per-Route Dirty Indicator ─── */
+.route-editor-card.route-dirty .route-editor-header {
+  position: relative;
+}
+.route-editor-card.route-dirty .route-editor-header::after {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #f59e0b;
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  box-shadow: 0 0 0 2px rgba(245,158,11,.25);
+}
+
+/* ─── Tab Header Actions ─── */
+.tab-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-ghost {
+  background: transparent;
+  border: 1.5px solid var(--adm-border);
+  color: var(--adm-muted);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  border-radius: var(--adm-rad-sm);
+  font-family: var(--adm-font);
+  transition: color .15s, border-color .15s;
+}
+.btn-ghost .material-symbols-rounded { font-size: 16px; }
+.btn-ghost:hover { color: var(--adm-navy); border-color: var(--adm-navy); }
+
+/* ─── CSV Toggle & Textarea ─── */
+.subsection-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.csv-toggle-btn {
+  background: none;
+  border: 1px solid var(--adm-border);
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--adm-muted);
+  padding: 2px 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color .15s, background .15s, border-color .15s;
+}
+.csv-toggle-btn .material-symbols-rounded { font-size: 16px; }
+.csv-toggle-btn:hover { color: var(--adm-navy); background: #f1f5f9; border-color: var(--adm-navy); }
+
+.csv-textarea {
+  font-family: "Courier New", monospace;
+  font-size: 13px;
+  line-height: 1.7;
+  resize: vertical;
+  min-height: 80px;
+  white-space: pre;
+  padding: 10px 12px;
+}
+
+/* ─── Drag-to-Reorder Stops ─── */
+.stop-drag-handle {
+  cursor: grab;
+  color: var(--adm-border);
+  font-size: 18px;
+  flex-shrink: 0;
+  transition: color .15s;
+  user-select: none;
+}
+.stop-drag-handle:hover { color: var(--adm-muted); }
+.stop-editor-item.stop-dragging { opacity: .35; }
+.stop-editor-item.stop-drop-above { box-shadow: 0 -2px 0 0 var(--adm-navy); }
+.stop-editor-item.stop-drop-below { box-shadow: 0 2px 0 0 var(--adm-navy); }
+
+/* Desktop: hide move buttons, show drag handle */
+@media (pointer: fine) {
+  .stop-move-btns { display: none; }
+}
+/* Touch devices: hide drag handle, show move buttons */
+@media (pointer: coarse) {
+  .stop-drag-handle { display: none; }
+  .stop-move-btns { flex-direction: row; gap: 4px; }
+  .stop-move-btn { width: 28px; height: 24px; font-size: 11px; }
+}
+
 /* ─── Responsive ─── */
 @media (max-width: 768px) {
   .adm-body { flex-direction: column; }
