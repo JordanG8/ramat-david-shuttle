@@ -212,13 +212,25 @@ body {
 
 .adm-header-actions { display: flex; align-items: center; gap: 10px; }
 
-.adm-status-badge {
-  background: rgba(255,255,255,.15);
-  border: 1px solid rgba(255,255,255,.2);
-  border-radius: 99px;
-  padding: 4px 12px;
-  font-size: 12px;
-  font-weight: 600;
+.adm-global-save {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.adm-global-save .material-symbols-rounded {
+  font-size: 18px;
+}
+.adm-global-save:disabled {
+  opacity: 0.4;
+  cursor: default;
+  pointer-events: none;
+}
+.adm-global-save.has-changes {
+  animation: pulse-save 1.5s ease-in-out infinite;
+}
+@keyframes pulse-save {
+  0%, 100% { box-shadow: none; }
+  50% { box-shadow: 0 0 0 3px rgba(99,102,241,.4); }
 }
 
 .adm-body {

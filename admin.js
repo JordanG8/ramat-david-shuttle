@@ -141,6 +141,7 @@ import "./src/styles/admin.css";
     }
 
     initTabs();
+    initGlobalSave();
     renderUnitsTab();
     renderRoutesTab();
     renderSchedulesTab();
@@ -169,6 +170,27 @@ import "./src/styles/admin.css";
     });
   }
 
+  // ─── Global Save Button ───
+  function initGlobalSave() {
+    $("global-save-btn").addEventListener("click", async function () {
+      var active = document.querySelector(".tab-panel.active");
+      if (!active) return;
+      var id = active.id;
+      if (id === "tab-units" && dirtyUnits) {
+        await persistUnits();
+        toast("יחידות ותחנות נשמרו בהצלחה!", "success");
+      } else if (id === "tab-routes" && dirtyRoutes) {
+        await persistRoutes();
+        toast("קווי שאטל נשמרו בהצלחה!", "success");
+      } else if (id === "tab-schedules" && dirtySchedules) {
+        await persistSchedules();
+        toast("לוחות זמנים נשמרו בהצלחה!", "success");
+      }
+      renderDataInfo();
+    });
+    updateSaveStatus();
+  }
+
   // ═══════════════════════════════════════════
   // TOAST
   // ═══════════════════════════════════════════
@@ -189,17 +211,16 @@ import "./src/styles/admin.css";
     }, 2500);
   }
 
-  // ─── Save-status badge ───
+  // ─── Save-status (global button) ───
   function updateSaveStatus() {
-    var b = $("save-status");
-    if (dirtyUnits || dirtyRoutes || dirtySchedules) {
-      b.textContent = "שינויים שלא נשמרו";
-      b.style.background = "rgba(239,68,68,.8)";
-      b.style.borderColor = "rgba(239,68,68,.4)";
+    var b = $("global-save-btn");
+    if (!b) return;
+    var dirty = dirtyUnits || dirtyRoutes || dirtySchedules;
+    b.disabled = !dirty;
+    if (dirty) {
+      b.classList.add("has-changes");
     } else {
-      b.textContent = "הכל שמור";
-      b.style.background = "rgba(34,197,94,.25)";
-      b.style.borderColor = "rgba(34,197,94,.3)";
+      b.classList.remove("has-changes");
     }
   }
 
@@ -547,11 +568,6 @@ import "./src/styles/admin.css";
     }
   });
 
-  $("save-units-btn").addEventListener("click", async function () {
-    await persistUnits();
-    toast("יחידות ותחנות נשמרו בהצלחה!", "success");
-    renderDataInfo();
-  });
 
   // ═══════════════════════════════════════════
   // ROUTES TAB
@@ -1101,11 +1117,6 @@ import "./src/styles/admin.css";
     btn.querySelector("span:last-child").textContent = routesAllOpen ? "סגור הכל" : "פתח הכל";
   });
 
-  $("save-routes-btn").addEventListener("click", async function () {
-    await persistRoutes();
-    toast("קווי שאטל נשמרו בהצלחה!", "success");
-    renderDataInfo();
-  });
 
   // ═══════════════════════════════════════════
   // SCHEDULES TAB (OLD_ROUTES)
@@ -1354,11 +1365,6 @@ import "./src/styles/admin.css";
     if (cards[ri]) cards[ri].classList.add("open");
   }
 
-  $("save-schedules-btn").addEventListener("click", async function () {
-    await persistSchedules();
-    toast("לוחות זמנים נשמרו בהצלחה!", "success");
-    renderDataInfo();
-  });
 
   // ═══════════════════════════════════════════
   // SETTINGS TAB

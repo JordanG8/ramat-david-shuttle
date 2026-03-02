@@ -12,10 +12,10 @@
     <link
       href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,1,0"
       rel="stylesheet" />
-    <script type="module" crossorigin src="/assets/admin-DzCXn5w1.js"></script>
+    <script type="module" crossorigin src="/assets/admin-HsyINmvv.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/app-8vAFc_bY.js">
     <link rel="stylesheet" crossorigin href="/assets/app-BpKPMLFs.css">
-    <link rel="stylesheet" crossorigin href="/assets/admin-CHKNnTVd.css">
+    <link rel="stylesheet" crossorigin href="/assets/admin-Bvlz5mMc.css">
   </head>
   <body>
     <!-- ─── Login Screen ─── -->
@@ -80,16 +80,9 @@
           </svg>
         </a>
         <div class="adm-header-actions">
-          <span class="adm-status-badge" id="save-status">שמור שינויים</span>
-          <button
-            class="btn btn-secondary btn-sm"
-            id="logout-btn"
-            style="
-              background: rgba(255, 255, 255, 0.1);
-              color: #fff;
-              border-color: rgba(255, 255, 255, 0.15);
-            ">
-            התנתק
+          <button class="btn btn-primary btn-sm adm-global-save" id="global-save-btn">
+            <span class="material-symbols-rounded">save</span>
+            שמור שינויים
           </button>
         </div>
       </header>
@@ -169,14 +162,9 @@
                 <div class="tab-page-title">יחידות ותחנות</div>
                 <div class="tab-page-sub">עריכת יחידות, מחלקות וסוגי תחנות</div>
               </div>
-              <div class="flex-row">
-                <button class="btn btn-primary" id="save-units-btn">
-                  שמור שינויים
-                </button>
-                <button class="btn btn-secondary" id="add-unit-btn">
-                  + הוסף יחידה
-                </button>
-              </div>
+              <button class="btn btn-secondary" id="add-unit-btn">
+                + הוסף יחידה
+              </button>
             </div>
             <div id="units-list"></div>
           </div>
@@ -195,9 +183,6 @@
                   <span class="material-symbols-rounded">unfold_more</span>
                   <span>פתח הכל</span>
                 </button>
-                <button class="btn btn-primary" id="save-routes-btn">
-                  שמור שינויים
-                </button>
               </div>
             </div>
             <div id="routes-list"></div>
@@ -210,9 +195,6 @@
                 <div class="tab-page-title">לוחות זמנים מלאים</div>
                 <div class="tab-page-sub">עריכת לוחות נסיעה מפורטים לפי קו</div>
               </div>
-              <button class="btn btn-primary" id="save-schedules-btn">
-                שמור שינויים
-              </button>
             </div>
             <div id="schedules-list"></div>
           </div>
@@ -349,6 +331,22 @@
                   ייבוא מקובץ JSON
                 </button>
               </div>
+            </div>
+
+            <div class="settings-card">
+              <div class="settings-card-title">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                  <polyline points="16 17 21 12 16 7" />
+                  <line x1="21" y1="12" x2="9" y2="12" />
+                </svg>
+                התנתקות
+              </div>
+              <div class="settings-card-desc">
+                התנתק מלוח הבקרה.
+              </div>
+              <button class="btn btn-secondary btn-sm" id="logout-btn">התנתק</button>
             </div>
 
             <div class="adm-section" style="margin-top: 8px">
