@@ -108,7 +108,14 @@ function renderStationsHtml() {
 }
 
 // ─── Hub-and-Spoke State ───
-let currentView = "home"; // "home" | "train" | "tzomet" | "internal" | "hada" | "oncall" | "info"
+const VALID_VIEWS = ["home", "train", "tzomet", "internal", "hada", "oncall", "info"];
+
+function getViewFromHash() {
+  const hash = window.location.hash.replace("#", "");
+  return VALID_VIEWS.includes(hash) ? hash : "home";
+}
+
+let currentView = getViewFromHash();
 let highlightTime = null;
 
 // ─── Icons ───
@@ -456,8 +463,8 @@ function getAllUpcomingDepartures() {
     }
   }
 
-  addRouteEntries(toTrain, "train", "בסיס ← רכבת", "board-badge-train");
-  addRouteEntries(fromTrain, "train", "רכבת ← בסיס", "board-badge-train");
+  addRouteEntries(toTrain, "train", "בסיס ← רכבת כפ״י", "board-badge-train");
+  addRouteEntries(fromTrain, "train", "רכבת כפ״י ← בסיס", "board-badge-train");
 
   // Tzomet: bus_routes[3]
   const tzomet = DATA.bus_routes[3];
@@ -625,12 +632,6 @@ function renderNavButtons() {
   ];
 
   let html = `<div class="nav-card">`;
-  html += `<div class="nav-card-brand">
-    <div class="nav-card-brand-text">
-      <div class="nav-card-brand-title">אפליקציית השאטלים</div>
-      <div class="nav-card-brand-sub">בסיס כנף 1 — רמת דוד</div>
-    </div>
-  </div>`;
   html += `<div class="nav-card-cta">
     <span class="material-symbols-rounded nav-card-title-icon">explore</span>
     <h2 class="nav-card-title">לאן את.ה צריך להגיע?</h2>
@@ -654,6 +655,10 @@ function renderNavButtons() {
 // ─── Render Home Page ───
 function renderHomePage() {
   let html = "";
+  html += `<div class="app-brand-header">
+    <div class="app-brand-title">שאטל 1</div>
+    <div class="app-brand-sub">אפליקציית השאטלים של בסיס כנף 1 — רמת דוד</div>
+  </div>`;
   html += renderDepartureBoard();
   html += renderNavButtons();
   return html;
@@ -724,8 +729,22 @@ function navigateTo(view, opts) {
   opts = opts || {};
   currentView = view;
   highlightTime = opts.highlightTime || null;
+  // Update URL hash (pushState for back-button support)
+  if (window.location.hash !== "#" + view) {
+    history.pushState(null, "", "#" + view);
+  }
   renderCurrentView();
 }
+
+// Handle browser back/forward navigation
+window.addEventListener("popstate", () => {
+  const view = getViewFromHash();
+  if (view !== currentView) {
+    currentView = view;
+    highlightTime = null;
+    renderCurrentView();
+  }
+});
 window.navigateTo = navigateTo;
 
 // ─── Render Current View (master renderer) ───
@@ -1085,6 +1104,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     toast.textContent = "שגיאה בטעינת נתונים עדכניים. מוצגים נתוני גיבוי.";
     document.body.appendChild(toast);
     setTimeout(() => toast.remove(), 5000);
+  }
+  // Set the hash to reflect the initial view
+  if (!window.location.hash) {
+    history.replaceState(null, "", "#home");
   }
   renderCurrentView();
   startCountdownTimer();

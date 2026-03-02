@@ -41,6 +41,8 @@ import "./src/styles/admin.css";
   var dirtyUnits = false,
     dirtyRoutes = false,
     dirtySchedules = false;
+  var dirtyRouteIndices = new Set();
+  var csvModeRoutes = new Set();
 
   // ═══════════════════════════════════════════
   // AUTHENTICATION
@@ -201,9 +203,12 @@ import "./src/styles/admin.css";
     }
   }
 
-  function markDirty(w) {
+  function markDirty(w, ri) {
     if (w === "units") dirtyUnits = true;
-    if (w === "routes") dirtyRoutes = true;
+    if (w === "routes") {
+      dirtyRoutes = true;
+      if (ri != null) dirtyRouteIndices.add(ri);
+    }
     if (w === "schedules") dirtySchedules = true;
     updateSaveStatus();
   }
@@ -243,7 +248,9 @@ import "./src/styles/admin.css";
     await saveToServer(d);
     DATA.bus_routes = clone(editRoutes);
     dirtyRoutes = false;
+    dirtyRouteIndices.clear();
     updateSaveStatus();
+    renderRoutesTab();
   }
 
   async function persistSchedules() {
@@ -268,6 +275,7 @@ import "./src/styles/admin.css";
     DATA.bus_routes = clone(editRoutes);
     if (typeof OLD_ROUTES !== "undefined") OLD_ROUTES = clone(editSchedules);
     dirtyUnits = dirtyRoutes = dirtySchedules = false;
+    dirtyRouteIndices.clear();
     updateSaveStatus();
   }
 
@@ -623,18 +631,22 @@ import "./src/styles/admin.css";
         var badge = hasSub
           ? route.sub_routes.length + " תת-מסלולים"
           : sc + " תחנות · " + tc + " יציאות";
+        var dirtyClass = dirtyRouteIndices.has(ri) ? " route-dirty" : "";
         return (
           '<div class="route-editor-card' +
           (ri === 0 ? " open" : "") +
+          dirtyClass +
           '">' +
           '<div class="route-editor-header"><div class="route-editor-title"><span class="route-badge">' +
           (ri + 1) +
           "</span><span>" +
           esc(route.name) +
           "</span></div>" +
-          '<div class="unit-editor-meta"><span class="dept-count-badge">' +
+          '<div class="route-header-actions"><span class="dept-count-badge">' +
           badge +
           "</span>" +
+          '<button class="route-action-btn" data-act="dup-route" data-r="' + ri + '" title="שכפל קו">' +
+          '<span class="material-symbols-rounded">content_copy</span></button>' +
           chevronSvg +
           "</div></div>" +
           '<div class="route-editor-body">' +
@@ -673,10 +685,32 @@ import "./src/styles/admin.css";
 
   function buildStopsHtml(ri, si, stops) {
     var sp = si >= 0 ? ' data-s="' + si + '"' : "";
+    var csvKey = ri + "-" + si;
+    var isCsv = csvModeRoutes.has(csvKey);
+
+    var toggleIcon = isCsv ? "list" : "edit_note";
+    var toggleTitle = isCsv ? "מצב רשימה" : "עריכה מהירה";
+    var toggleBtn = '<button class="csv-toggle-btn" data-act="toggle-csv" data-r="' +
+      ri + '"' + sp + ' data-csv-key="' + csvKey + '" title="' + toggleTitle + '">' +
+      '<span class="material-symbols-rounded">' + toggleIcon + '</span></button>';
+
+    if (isCsv) {
+      var csvText = stops.join("\n");
+      return (
+        '<div class="route-subsection mt-8"><div class="route-subsection-header"><span>תחנות עצירה (' +
+        stops.length + ')</span><div class="subsection-header-actions">' + toggleBtn + '</div></div>' +
+        '<div class="route-subsection-body">' +
+        '<textarea class="form-control csv-textarea" data-f="csv-stops" data-r="' + ri + '"' + sp +
+        ' placeholder="תחנה אחת בכל שורה..." rows="' + Math.max(4, stops.length + 1) + '">' +
+        esc(csvText) + '</textarea></div></div>'
+      );
+    }
+
     var items = stops
       .map(function (stop, idx) {
         return (
-          '<div class="stop-editor-item">' +
+          '<div class="stop-editor-item" draggable="true" data-r="' + ri + '"' + sp + ' data-i="' + idx + '">' +
+          '<span class="stop-drag-handle material-symbols-rounded" title="גרור לסידור">drag_indicator</span>' +
           '<span class="stop-num-badge">' +
           (idx + 1) +
           "</span>" +
@@ -719,12 +753,12 @@ import "./src/styles/admin.css";
     return (
       '<div class="route-subsection mt-8"><div class="route-subsection-header"><span>תחנות עצירה (' +
       stops.length +
-      ")</span>" +
+      ')</span><div class="subsection-header-actions">' +
       '<button class="btn btn-secondary btn-sm" data-act="add-stp" data-r="' +
       ri +
       '"' +
       sp +
-      ">+ תחנה</button></div>" +
+      ">+ תחנה</button>" + toggleBtn + "</div></div>" +
       '<div class="route-subsection-body"><div class="stops-editor-list">' +
       items +
       "</div></div></div>"
@@ -732,6 +766,29 @@ import "./src/styles/admin.css";
   }
 
   function buildTimesHtml(ri, times) {
+    var csvKey = ri + "-times";
+    var isCsv = csvModeRoutes.has(csvKey);
+
+    var toggleIcon = isCsv ? "list" : "edit_note";
+    var toggleTitle = isCsv ? "מצב רשימה" : "עריכה מהירה";
+    var toggleBtn = '<button class="csv-toggle-btn" data-act="toggle-csv" data-r="' +
+      ri + '" data-csv-key="' + csvKey + '" title="' + toggleTitle + '">' +
+      '<span class="material-symbols-rounded">' + toggleIcon + '</span></button>';
+
+    if (isCsv) {
+      var csvText = times.map(function (t) {
+        return t.time + (t.note ? " | " + t.note : "");
+      }).join("\n");
+      return (
+        '<div class="route-subsection mt-8"><div class="route-subsection-header"><span>שעות יציאה (' +
+        times.length + ')</span><div class="subsection-header-actions">' + toggleBtn + '</div></div>' +
+        '<div class="route-subsection-body">' +
+        '<textarea class="form-control csv-textarea" data-f="csv-times" data-r="' + ri +
+        '" style="direction:ltr;text-align:left" placeholder="שעה אחת בכל שורה...\n07:20\n08:00 | תגבור" rows="' +
+        Math.max(4, times.length + 1) + '">' + esc(csvText) + '</textarea></div></div>'
+      );
+    }
+
     var chips = times
       .map(function (t, ti) {
         var rein = t.note && t.note.indexOf("תגבור") >= 0;
@@ -763,10 +820,10 @@ import "./src/styles/admin.css";
     return (
       '<div class="route-subsection mt-8"><div class="route-subsection-header"><span>שעות יציאה (' +
       times.length +
-      ")</span>" +
+      ')</span><div class="subsection-header-actions">' +
       '<button class="btn btn-secondary btn-sm" data-act="add-tm" data-r="' +
       ri +
-      '">+ שעה</button></div>' +
+      '">+ שעה</button>' + toggleBtn + "</div></div>" +
       '<div class="route-subsection-body"><div class="times-editor-list">' +
       chips +
       "</div></div></div>"
@@ -794,7 +851,8 @@ import "./src/styles/admin.css";
 
   function bindRoutesEvents(c) {
     c.querySelectorAll(".route-editor-header").forEach(function (h) {
-      h.addEventListener("click", function () {
+      h.addEventListener("click", function (e) {
+        if (e.target.closest("[data-act]")) return;
         h.parentElement.classList.toggle("open");
       });
     });
@@ -837,7 +895,20 @@ import "./src/styles/admin.css";
         if (editRoutes[ri].departure_times)
           editRoutes[ri].departure_times[ti].time = el.value;
       }
-      markDirty("routes");
+      if (f === "csv-stops") {
+        var ref = routeRef(ri, si);
+        ref.stops = el.value.split("\n").filter(function (l) { return l.trim(); });
+      }
+      if (f === "csv-times") {
+        var lines = el.value.split("\n").filter(function (l) { return l.trim(); });
+        editRoutes[ri].departure_times = lines.map(function (line) {
+          var parts = line.split("|");
+          var t = { time: parts[0].trim() };
+          if (parts[1] && parts[1].trim()) t.note = parts[1].trim();
+          return t;
+        });
+      }
+      markDirty("routes", ri);
     });
 
     c.addEventListener("click", function (e) {
@@ -856,13 +927,13 @@ import "./src/styles/admin.css";
         var ref = routeRef(ri, si);
         if (!ref.stops) ref.stops = [];
         ref.stops.push("תחנה חדשה");
-        markDirty("routes");
+        markDirty("routes", ri);
         renderRoutesTab();
         openRouteCard(ri);
       }
       if (act === "del-stp" && idx >= 0) {
         routeRef(ri, si).stops.splice(idx, 1);
-        markDirty("routes");
+        markDirty("routes", ri);
         renderRoutesTab();
         openRouteCard(ri);
       }
@@ -871,7 +942,7 @@ import "./src/styles/admin.css";
         var t = s[idx - 1];
         s[idx - 1] = s[idx];
         s[idx] = t;
-        markDirty("routes");
+        markDirty("routes", ri);
         renderRoutesTab();
         openRouteCard(ri);
       }
@@ -881,7 +952,7 @@ import "./src/styles/admin.css";
           var t = s[idx + 1];
           s[idx + 1] = s[idx];
           s[idx] = t;
-          markDirty("routes");
+          markDirty("routes", ri);
           renderRoutesTab();
           openRouteCard(ri);
         }
@@ -890,13 +961,13 @@ import "./src/styles/admin.css";
         if (!editRoutes[ri].departure_times)
           editRoutes[ri].departure_times = [];
         editRoutes[ri].departure_times.push({ time: "08:00" });
-        markDirty("routes");
+        markDirty("routes", ri);
         renderRoutesTab();
         openRouteCard(ri);
       }
       if (act === "del-tm" && ti >= 0) {
         editRoutes[ri].departure_times.splice(ti, 1);
-        markDirty("routes");
+        markDirty("routes", ri);
         renderRoutesTab();
         openRouteCard(ri);
       }
@@ -904,7 +975,7 @@ import "./src/styles/admin.css";
         var dt = editRoutes[ri].departure_times[ti];
         if (dt.note && dt.note.indexOf("תגבור") >= 0) delete dt.note;
         else dt.note = "תגבור- רק בימי ראשון וחמישי";
-        markDirty("routes");
+        markDirty("routes", ri);
         renderRoutesTab();
         openRouteCard(ri);
       }
@@ -915,17 +986,91 @@ import "./src/styles/admin.css";
           departure_times_str: "",
           stops: [],
         });
-        markDirty("routes");
+        markDirty("routes", ri);
+        renderRoutesTab();
+        openRouteCard(ri);
+      }
+      if (act === "dup-route") {
+        editRoutes.splice(ri + 1, 0, clone(editRoutes[ri]));
+        editRoutes[ri + 1].name += " (עותק)";
+        markDirty("routes", ri + 1);
+        renderRoutesTab();
+        openRouteCard(ri + 1);
+      }
+      if (act === "toggle-csv") {
+        var key = btn.getAttribute("data-csv-key") || (ri + "-" + si);
+        if (csvModeRoutes.has(key)) csvModeRoutes.delete(key);
+        else csvModeRoutes.add(key);
         renderRoutesTab();
         openRouteCard(ri);
       }
       if (act === "del-sub" && si >= 0) {
         if (!confirm("למחוק תת-מסלול זה?")) return;
         editRoutes[ri].sub_routes.splice(si, 1);
-        markDirty("routes");
+        markDirty("routes", ri);
         renderRoutesTab();
         openRouteCard(ri);
       }
+    });
+
+    // ─── Drag-to-Reorder Stops ───
+    var dragState = null;
+    c.addEventListener("dragstart", function (e) {
+      var item = e.target.closest(".stop-editor-item[draggable]");
+      if (!item) return;
+      dragState = {
+        ri: +item.getAttribute("data-r"),
+        si: item.getAttribute("data-s") != null ? +item.getAttribute("data-s") : -1,
+        idx: +item.getAttribute("data-i")
+      };
+      item.classList.add("stop-dragging");
+      e.dataTransfer.effectAllowed = "move";
+      e.dataTransfer.setData("text/plain", "");
+    });
+    c.addEventListener("dragover", function (e) {
+      var item = e.target.closest(".stop-editor-item[draggable]");
+      if (!item || !dragState) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+      // Show drop indicator
+      var rect = item.getBoundingClientRect();
+      var midY = rect.top + rect.height / 2;
+      item.classList.remove("stop-drop-above", "stop-drop-below");
+      if (e.clientY < midY) item.classList.add("stop-drop-above");
+      else item.classList.add("stop-drop-below");
+    });
+    c.addEventListener("dragleave", function (e) {
+      var item = e.target.closest(".stop-editor-item[draggable]");
+      if (item) item.classList.remove("stop-drop-above", "stop-drop-below");
+    });
+    c.addEventListener("drop", function (e) {
+      e.preventDefault();
+      var item = e.target.closest(".stop-editor-item[draggable]");
+      if (!item || !dragState) return;
+      var targetIdx = +item.getAttribute("data-i");
+      var targetRi = +item.getAttribute("data-r");
+      var targetSi = item.getAttribute("data-s") != null ? +item.getAttribute("data-s") : -1;
+      // Only reorder within same route/sub-route
+      if (targetRi !== dragState.ri || targetSi !== dragState.si) return;
+      if (targetIdx === dragState.idx) return;
+      var rect = item.getBoundingClientRect();
+      var dropAfter = e.clientY > rect.top + rect.height / 2;
+      var s = routeRef(dragState.ri, dragState.si).stops;
+      var moved = s.splice(dragState.idx, 1)[0];
+      var insertAt = targetIdx;
+      if (dragState.idx < targetIdx) insertAt--;
+      if (dropAfter) insertAt++;
+      s.splice(insertAt, 0, moved);
+      markDirty("routes", dragState.ri);
+      dragState = null;
+      renderRoutesTab();
+      openRouteCard(targetRi);
+    });
+    c.addEventListener("dragend", function () {
+      dragState = null;
+      c.querySelectorAll(".stop-dragging, .stop-drop-above, .stop-drop-below").forEach(function (el) {
+        el.classList.remove("stop-dragging", "stop-drop-above", "stop-drop-below");
+      });
     });
   }
 
@@ -933,6 +1078,20 @@ import "./src/styles/admin.css";
     var cards = $("routes-list").querySelectorAll(".route-editor-card");
     if (cards[ri]) cards[ri].classList.add("open");
   }
+
+  // ─── Collapse / Expand All Routes ───
+  var routesAllOpen = false;
+  $("toggle-all-routes").addEventListener("click", function () {
+    routesAllOpen = !routesAllOpen;
+    var cards = $("routes-list").querySelectorAll(".route-editor-card");
+    cards.forEach(function (card) {
+      if (routesAllOpen) card.classList.add("open");
+      else card.classList.remove("open");
+    });
+    var btn = $("toggle-all-routes");
+    btn.querySelector(".material-symbols-rounded").textContent = routesAllOpen ? "unfold_less" : "unfold_more";
+    btn.querySelector("span:last-child").textContent = routesAllOpen ? "סגור הכל" : "פתח הכל";
+  });
 
   $("save-routes-btn").addEventListener("click", async function () {
     await persistRoutes();
