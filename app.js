@@ -606,8 +606,8 @@ function renderNavButtons() {
   const buttons = [
     {
       icon: railwayIcon,
-      label: "בסיס - רכבת כפר יהושע",
-      sub: "נסיעות לרכבת הגלילים",
+      label: "רכבת כפר יהושע",
+      sub: "",
       view: "train",
       iconClass: "nav-btn-icon-wrap--train",
     },
