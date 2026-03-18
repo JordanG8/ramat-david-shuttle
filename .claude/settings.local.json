@@ -6,7 +6,17 @@
       "Bash(cd \"C:\\\\Users\\\\yospe\\\\OneDrive\\\\Documents\\\\GitHub\\\\ramat-david-shuttle\" && npx vite@5 --host 2>&1)",
       "Bash(cd C:\\\\Users\\\\yospe\\\\OneDrive\\\\Documents\\\\GitHub\\\\ramat-david-shuttle:*)",
       "Bash(npx vite:*)",
-      "Bash(git:*)"
+      "Bash(git:*)",
+      "WebSearch",
+      "Bash(npx create-next-app@latest:*)",
+      "Bash(npx shadcn@latest:*)",
+      "Bash(npx next:*)",
+      "Bash(npx vercel:*)",
+      "Bash(mkdir:*)",
+      "Bash(vercel deploy:*)",
+      "Bash(vercel inspect:*)",
+      "Bash(vercel whoami:*)",
+      "Bash(vercel project:*)"
     ]
   }
 }
