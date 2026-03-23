@@ -1269,31 +1269,50 @@ body::before {
   gap: var(--space-sm);
 }
 
-/* ─── Route Source Label ─── */
-.route-card-source-label {
-  font-size: 0.68rem;
-  font-family: var(--font-body);
-  font-weight: 500;
-  color: rgba(147, 210, 255, 0.75);
-  text-align: center;
-  margin-bottom: 5px;
-  letter-spacing: 0.03em;
+/* ─── Inline Kav Links (inside departure block titles) ─── */
+.block-kav-links {
+  display: inline-flex;
+  gap: 4px;
+  margin-right: 8px;
+  vertical-align: middle;
 }
 
-.route-source-link {
-  color: #7dd3fc;
+.block-kav-link {
+  display: inline-block;
+  font-size: 0.65rem;
   font-weight: 700;
-  text-decoration: underline;
-  text-decoration-color: rgba(125, 211, 252, 0.35);
-  text-underline-offset: 2px;
+  color: #7dd3fc;
+  background: rgba(125, 211, 252, 0.12);
+  border: 1px solid rgba(125, 211, 252, 0.25);
+  border-radius: 5px;
+  padding: 1px 6px;
+  text-decoration: none;
   cursor: pointer;
-  margin: 0 1px;
-  transition: color 0.15s;
+  transition: background 0.15s, color 0.15s;
 }
 
-.route-source-link:hover {
+.block-kav-link:hover {
+  background: rgba(125, 211, 252, 0.25);
   color: #38bdf8;
-  text-decoration-color: rgba(56, 189, 248, 0.6);
+}
+
+/* ─── Per-trip Kav Link (hada rows) ─── */
+.trip-kav-link {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #7dd3fc;
+  background: rgba(125, 211, 252, 0.12);
+  border: 1px solid rgba(125, 211, 252, 0.25);
+  border-radius: 5px;
+  padding: 1px 6px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.trip-kav-link:hover {
+  background: rgba(125, 211, 252, 0.25);
+  color: #38bdf8;
 }
 
 /* ─── Countdown Banner ─── */

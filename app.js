@@ -171,7 +171,20 @@ function renderDepartureList(items, extraClass) {
   </div>`;
 }
 
-function renderDepartureTable(departures, filterReinforcement, split) {
+function renderKavLinks(lines) {
+  if (!lines || lines.length === 0) return "";
+  return lines
+    .map(
+      (l) =>
+        `<a class="block-kav-link" onclick="navigateTo('info',{activeKav:'${l.kavId}'})">${esc(l.label)}</a>`,
+    )
+    .join("");
+}
+
+function renderDepartureTable(departures, filterReinforcement, split, sourceLines) {
+  const kavLinks = renderKavLinks(sourceLines);
+  const kavSuffix = kavLinks ? `<span class="block-kav-links">${kavLinks}</span>` : "";
+
   if (split) {
     const regular = departures.filter((d) => !d.note);
     const reinforce = departures.filter((d) => !!d.note);
@@ -180,7 +193,7 @@ function renderDepartureTable(departures, filterReinforcement, split) {
       html += `
         <div class="card-block times-block-compact">
           <div class="card-block-header static">
-            <div class="card-block-title">${clockSVG} שעות יציאה <span class="estimated-tag">משוערות</span></div>
+            <div class="card-block-title">${clockSVG} שעות יציאה <span class="estimated-tag">משוערות</span>${kavSuffix}</div>
           </div>
           ${renderDepartureList(regular)}
         </div>`;
@@ -190,7 +203,7 @@ function renderDepartureTable(departures, filterReinforcement, split) {
       html += `
         <div class="card-block times-block-compact times-block--reinforce${reinforceOpen}" onclick="this.classList.toggle('open')">
           <div class="card-block-header reinforce-header">
-            <div class="card-block-title">${reinforceSVG} תגבור ראשון וחמישי <span class="estimated-tag">משוער</span></div>
+            <div class="card-block-title">${reinforceSVG} תגבור ראשון וחמישי <span class="estimated-tag">משוער</span>${kavSuffix}</div>
             <div class="card-block-meta">${smallChevronSVG}</div>
           </div>
           <div class="card-block-body">
@@ -212,7 +225,7 @@ function renderDepartureTable(departures, filterReinforcement, split) {
   return `
     <div class="card-block times-block-compact">
       <div class="card-block-header static">
-        <div class="card-block-title">${clockSVG} שעות יציאה <span class="estimated-tag">משוערות</span></div>
+        <div class="card-block-title">${clockSVG} שעות יציאה <span class="estimated-tag">משוערות</span>${kavSuffix}</div>
       </div>
       ${renderDepartureList(filtered)}
     </div>`;
@@ -249,6 +262,7 @@ function renderRouteCard(route, opts) {
       route.departure_times,
       filterReinforcement,
       opts.splitReinforcement,
+      opts.sourceLines,
     );
   }
 
@@ -281,14 +295,12 @@ function renderRouteCard(route, opts) {
 
   const name = titleOverride || route.name;
   const titleHtml = formatRouteTitle(name);
-  const sourceLabel = renderSourceLabel(opts.sourceLines);
 
   const countdownHtml = renderCountdownBanner(route);
 
   return `
     <div class="route-card">
       <div class="route-card-header">
-        ${sourceLabel}
         <div class="route-card-title">${titleHtml}</div>
       </div>
       ${countdownHtml}
@@ -765,17 +777,6 @@ function getRouteLinesByStop(keyword) {
     });
 }
 
-function renderSourceLabel(lines) {
-  if (!lines || lines.length === 0) return "";
-  const links = lines
-    .map(
-      (l) =>
-        `<a class="route-source-link" onclick="navigateTo('info',{activeKav:'${l.kavId}'})">${esc(l.label)}</a>`,
-    )
-    .join(" ");
-  return `<div class="route-card-source-label">מסלול לקוח מתוך ${links}</div>`;
-}
-
 // ─── Navigate To ───
 function navigateTo(view, opts) {
   opts = opts || {};
@@ -877,21 +878,8 @@ function renderHadaCard(title, trips) {
   const upcoming = getUpcomingFromTimes(trips.map((t) => t.time));
   const countdown = renderCountdownFromUpcoming(upcoming);
 
-  const hadaLines = [
-    ...new Map(
-      trips
-        .map((t) => {
-          const m = t.routeName?.match(/^קו\s*(\d+)/);
-          return m ? [`kav${m[1]}`, { kavId: `kav${m[1]}`, label: `קו ${m[1]}` }] : null;
-        })
-        .filter(Boolean),
-    ).values(),
-  ];
-  const sourceLabel = renderSourceLabel(hadaLines);
-
   let html = `<div class="route-card">
     <div class="route-card-header">
-      ${sourceLabel}
       <div class="route-card-title">${title}</div>
     </div>
     ${countdown}
@@ -905,11 +893,16 @@ function renderHadaCard(title, trips) {
         return `<div class="stop-item${hada}"><span class="stop-num">${i + 1}</span>${esc(stop)}</div>`;
       })
       .join("");
+    const kavNum = trip.routeName?.match(/^קו\s*(\d+)/)?.[1];
+    const kavLink = kavNum
+      ? `<a class="trip-kav-link" onclick="event.stopPropagation();navigateTo('info',{activeKav:'kav${kavNum}'})" title="לוח זמנים מלא">קו ${kavNum}</a>`
+      : "";
     html += `
       <div class="card-block stops-block${passed}" onclick="this.classList.toggle('open')">
         <div class="card-block-header">
           <div class="card-block-title">${mapPinSVG} ${esc(trip.time)} <span class="estimated-tag">משוער</span></div>
           <div class="card-block-meta">
+            ${kavLink}
             <span class="stop-count-badge">${trip.stops.length} תחנות</span>
             ${smallChevronSVG}
           </div>
