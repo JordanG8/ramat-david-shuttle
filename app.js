@@ -1026,7 +1026,7 @@ function renderInfoContent() {
 
   // Old routes
   html += `<div class="info-section">
-    <h2 class="info-section-title">קויי שאטל</h2>
+    <h2 class="info-section-title">קוי שאטל</h2>
     ${renderOldRouteTabsHtml()}
     <div id="oldroute-content" class="route-content">${renderOldRouteContentHtml()}</div>
   </div>`;
