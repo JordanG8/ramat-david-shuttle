@@ -281,12 +281,14 @@ function renderRouteCard(route, opts) {
 
   const name = titleOverride || route.name;
   const titleHtml = formatRouteTitle(name);
+  const sourceLabel = renderSourceLabel(opts.sourceLines);
 
   const countdownHtml = renderCountdownBanner(route);
 
   return `
     <div class="route-card">
       <div class="route-card-header">
+        ${sourceLabel}
         <div class="route-card-title">${titleHtml}</div>
       </div>
       ${countdownHtml}
@@ -714,11 +716,13 @@ function renderRouteContent(view) {
   if (view === "train") {
     const toTrain = DATA.bus_routes[0];
     const fromTrain = DATA.bus_routes[1];
-    html += renderRouteCard(toTrain, { splitReinforcement: true });
-    html += renderRouteCard(fromTrain, { splitReinforcement: true });
+    const trainLines = getRouteLinesByStop("רכבת כפר יהושע");
+    html += renderRouteCard(toTrain, { splitReinforcement: true, sourceLines: trainLines });
+    html += renderRouteCard(fromTrain, { splitReinforcement: true, sourceLines: trainLines });
   } else if (view === "tzomet") {
     const tzomet = DATA.bus_routes[3];
-    html += renderRouteCard(tzomet, { hideEvening: true });
+    const tzometLines = getRouteLinesByStop("צומת רמת דוד");
+    html += renderRouteCard(tzomet, { hideEvening: true, sourceLines: tzometLines });
   } else if (view === "internal") {
     const internal = DATA.bus_routes[2];
     if (internal.note) {
@@ -726,7 +730,13 @@ function renderRouteContent(view) {
     }
     if (internal.sub_routes) {
       internal.sub_routes.forEach((sub) => {
-        html += renderRouteCard(sub);
+        const keyword = sub.name.includes("מסלול א")
+          ? "גף טיסה 109"
+          : sub.name.includes("מסלול ב")
+            ? "גף טיסה 105"
+            : null;
+        const subLines = keyword ? getRouteLinesByStop(keyword) : [];
+        html += renderRouteCard(sub, { sourceLines: subLines });
       });
     }
   } else if (view === "hada") {
@@ -740,11 +750,38 @@ function renderRouteContent(view) {
   return html;
 }
 
+// ─── Line-source helpers ───
+function getRouteLinesByStop(keyword) {
+  return OLD_ROUTES
+    .map((r, i) => {
+      const m = r.name.match(/^קו\s*(\d+)/);
+      return m ? { kavId: `kav${i + 1}`, label: `קו ${m[1]}` } : null;
+    })
+    .filter((entry, i) => {
+      if (!entry) return false;
+      return OLD_ROUTES[i].schedule.some(
+        (e) => e.stops && e.stops.some((s) => s.includes(keyword)),
+      );
+    });
+}
+
+function renderSourceLabel(lines) {
+  if (!lines || lines.length === 0) return "";
+  const links = lines
+    .map(
+      (l) =>
+        `<a class="route-source-link" onclick="navigateTo('info',{activeKav:'${l.kavId}'})">${esc(l.label)}</a>`,
+    )
+    .join(" ");
+  return `<div class="route-card-source-label">מסלול לקוח מתוך ${links}</div>`;
+}
+
 // ─── Navigate To ───
 function navigateTo(view, opts) {
   opts = opts || {};
   currentView = view;
   highlightTime = opts.highlightTime || null;
+  if (opts.activeKav) activeOldRoute = opts.activeKav;
   // Update URL hash (pushState for back-button support)
   if (window.location.hash !== "#" + view) {
     history.pushState(null, "", "#" + view);
@@ -840,14 +877,22 @@ function renderHadaCard(title, trips) {
   const upcoming = getUpcomingFromTimes(trips.map((t) => t.time));
   const countdown = renderCountdownFromUpcoming(upcoming);
 
-  const lineMatch = trips[0]?.routeName?.match(/^(קו\s*\d+)/);
-  const lineBadge = lineMatch
-    ? `<span class="route-line-badge">${lineMatch[1]}</span>`
-    : "";
+  const hadaLines = [
+    ...new Map(
+      trips
+        .map((t) => {
+          const m = t.routeName?.match(/^קו\s*(\d+)/);
+          return m ? [`kav${m[1]}`, { kavId: `kav${m[1]}`, label: `קו ${m[1]}` }] : null;
+        })
+        .filter(Boolean),
+    ).values(),
+  ];
+  const sourceLabel = renderSourceLabel(hadaLines);
 
   let html = `<div class="route-card">
     <div class="route-card-header">
-      <div class="route-card-title">${title}${lineBadge}</div>
+      ${sourceLabel}
+      <div class="route-card-title">${title}</div>
     </div>
     ${countdown}
     <div class="route-card-body">`;
