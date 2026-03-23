@@ -878,8 +878,8 @@ function renderHadaContent() {
   const groups = getHadaTrips();
   let html = "";
 
-  html += renderHadaCard('חד"א - כיוון 105', groups["105"]);
-  html += renderHadaCard('חד"א - כיוון 109', groups["109"]);
+  html += renderHadaCard('חדר אוכל - מסלול ב׳', groups["105"]);
+  html += renderHadaCard('חדר אוכל - מסלול א׳', groups["109"]);
   html += renderHadaCard('חד"א - טייסת תחזוקה', groups.maintenance);
 
   return html;
