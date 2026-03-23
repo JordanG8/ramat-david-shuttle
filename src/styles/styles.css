@@ -1269,6 +1269,20 @@ body::before {
   gap: var(--space-sm);
 }
 
+/* ─── Route Line Badge ─── */
+.route-line-badge {
+  display: inline-block;
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  border-radius: 6px;
+  padding: 2px 8px;
+  margin-right: var(--space-sm);
+  letter-spacing: 0.03em;
+  vertical-align: middle;
+}
+
 /* ─── Countdown Banner ─── */
 .countdown-banner {
   display: flex;

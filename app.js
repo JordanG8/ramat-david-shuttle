@@ -821,7 +821,7 @@ function getHadaTrips() {
       const last = entry.stops[entry.stops.length - 1];
       if (!isHadaStop(first) && !isHadaStop(last)) return;
       const area = classifyHadaArea(entry.stops);
-      groups[area].push({ time: entry.time, stops: entry.stops });
+      groups[area].push({ time: entry.time, stops: entry.stops, routeName: route.name });
     });
   });
   const parseTime = (t) => {
@@ -840,9 +840,14 @@ function renderHadaCard(title, trips) {
   const upcoming = getUpcomingFromTimes(trips.map((t) => t.time));
   const countdown = renderCountdownFromUpcoming(upcoming);
 
+  const lineMatch = trips[0]?.routeName?.match(/^(קו\s*\d+)/);
+  const lineBadge = lineMatch
+    ? `<span class="route-line-badge">${lineMatch[1]}</span>`
+    : "";
+
   let html = `<div class="route-card">
     <div class="route-card-header">
-      <div class="route-card-title">${title}</div>
+      <div class="route-card-title">${title}${lineBadge}</div>
     </div>
     ${countdown}
     <div class="route-card-body">`;
@@ -878,8 +883,8 @@ function renderHadaContent() {
   const groups = getHadaTrips();
   let html = "";
 
-  html += renderHadaCard('חדר אוכל - מסלול ב׳', groups["105"]);
   html += renderHadaCard('חדר אוכל - מסלול א׳', groups["109"]);
+  html += renderHadaCard('חדר אוכל - מסלול ב׳', groups["105"]);
   html += renderHadaCard('חד"א - טייסת תחזוקה', groups.maintenance);
 
   return html;
