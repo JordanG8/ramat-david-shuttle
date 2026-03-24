@@ -167,19 +167,22 @@ function getKavForTime(time, stopKeyword) {
   };
   const target = toMins(time);
   if (target < 0) return [];
-  return OLD_ROUTES.map((r, i) => {
+  const all = OLD_ROUTES.map((r, i) => {
     const m = r.name.match(/^קו\s*(\d+)/);
-    return m ? { kavId: `kav${i + 1}`, label: `קו ${m[1]}`, route: r } : null;
-  }).filter((entry) => {
-    if (!entry) return false;
-    return entry.route.schedule.some(
+    if (!m) return null;
+    const isReinforcement = r.name.includes("תגבור");
+    const matches = r.schedule.some(
       (e) =>
         e.type === "נסיעה" &&
         e.stops &&
         e.stops.some((s) => s.includes(stopKeyword)) &&
         toMins(e.time) === target,
     );
-  }).map(({ kavId, label }) => ({ kavId, label }));
+    return matches ? { kavId: `kav${i + 1}`, label: `קו ${m[1]}`, isReinforcement } : null;
+  }).filter(Boolean);
+  // If both regular and reinforcement lines match, show only the regular ones
+  const regular = all.filter((k) => !k.isReinforcement);
+  return (regular.length > 0 ? regular : all).map(({ kavId, label }) => ({ kavId, label }));
 }
 
 function renderDepartureList(items, extraClass, stopKeyword) {
