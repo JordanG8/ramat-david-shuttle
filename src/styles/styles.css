@@ -1680,6 +1680,22 @@ body::before {
   border-color: var(--station-yellow-border);
 }
 
+.dep-time-item--with-kavs {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 4px 8px;
+  vertical-align: top;
+}
+
+.dep-time-kav-row {
+  display: flex;
+  gap: 3px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
 .dep-time-passed {
   opacity: 0.35;
   text-decoration: line-through;

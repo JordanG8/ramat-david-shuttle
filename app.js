@@ -160,12 +160,39 @@ function isTimePassed(timeStr) {
   return parseInt(match[1]) * 60 + parseInt(match[2]) < nowMins;
 }
 
-function renderDepartureList(items, extraClass) {
+function getKavForTime(time, stopKeyword) {
+  const toMins = (t) => {
+    const m = t.match(/^(\d{1,2}):(\d{2})$/);
+    return m ? parseInt(m[1]) * 60 + parseInt(m[2]) : -1;
+  };
+  const target = toMins(time);
+  if (target < 0) return [];
+  return OLD_ROUTES.map((r, i) => {
+    const m = r.name.match(/^קו\s*(\d+)/);
+    return m ? { kavId: `kav${i + 1}`, label: `קו ${m[1]}`, route: r } : null;
+  }).filter((entry) => {
+    if (!entry) return false;
+    return entry.route.schedule.some(
+      (e) =>
+        e.type === "נסיעה" &&
+        e.stops &&
+        e.stops.some((s) => s.includes(stopKeyword)) &&
+        toMins(e.time) === target,
+    );
+  }).map(({ kavId, label }) => ({ kavId, label }));
+}
+
+function renderDepartureList(items, extraClass, stopKeyword) {
   return `<div class="departure-list">
     ${items
       .map((d) => {
         const passed = isTimePassed(d.time) ? " dep-time-passed" : "";
-        return `<span class="dep-time-item ${extraClass || ""} ${d.note ? "dep-time-item--reinforce" : ""}${passed}">${esc(d.time)}</span>`;
+        const reinforce = d.note ? "dep-time-item--reinforce" : "";
+        const kavs = stopKeyword ? getKavForTime(d.time, stopKeyword) : [];
+        const kavHtml = kavs.length
+          ? `<span class="dep-time-kav-row">${kavs.map((l) => `<a class="block-kav-link" onclick="navigateTo('info',{activeKav:'${l.kavId}'})">${esc(l.label)}</a>`).join("")}</span>`
+          : "";
+        return `<span class="dep-time-item ${reinforce} ${passed}${kavs.length ? " dep-time-item--with-kavs" : ""}">${esc(d.time)}${kavHtml}</span>`;
       })
       .join("")}
   </div>`;
@@ -181,10 +208,7 @@ function renderKavLinks(lines) {
     .join("");
 }
 
-function renderDepartureTable(departures, filterReinforcement, split, sourceLines) {
-  const kavLinks = renderKavLinks(sourceLines);
-  const kavSuffix = kavLinks ? `<span class="block-kav-links">${kavLinks}</span>` : "";
-
+function renderDepartureTable(departures, filterReinforcement, split, stopKeyword) {
   if (split) {
     const regular = departures.filter((d) => !d.note);
     const reinforce = departures.filter((d) => !!d.note);
@@ -193,9 +217,9 @@ function renderDepartureTable(departures, filterReinforcement, split, sourceLine
       html += `
         <div class="card-block times-block-compact">
           <div class="card-block-header static">
-            <div class="card-block-title">${clockSVG} שעות יציאה <span class="estimated-tag">משוערות</span>${kavSuffix}</div>
+            <div class="card-block-title">${clockSVG} שעות יציאה <span class="estimated-tag">משוערות</span></div>
           </div>
-          ${renderDepartureList(regular)}
+          ${renderDepartureList(regular, "", stopKeyword)}
         </div>`;
     }
     if (reinforce.length > 0) {
@@ -203,11 +227,11 @@ function renderDepartureTable(departures, filterReinforcement, split, sourceLine
       html += `
         <div class="card-block times-block-compact times-block--reinforce${reinforceOpen}" onclick="this.classList.toggle('open')">
           <div class="card-block-header reinforce-header">
-            <div class="card-block-title">${reinforceSVG} תגבור ראשון וחמישי <span class="estimated-tag">משוער</span>${kavSuffix}</div>
+            <div class="card-block-title">${reinforceSVG} תגבור ראשון וחמישי <span class="estimated-tag">משוער</span></div>
             <div class="card-block-meta">${smallChevronSVG}</div>
           </div>
           <div class="card-block-body">
-            ${renderDepartureList(reinforce, "dep-time-item--reinforce")}
+            ${renderDepartureList(reinforce, "dep-time-item--reinforce", stopKeyword)}
           </div>
         </div>`;
     }
@@ -225,13 +249,13 @@ function renderDepartureTable(departures, filterReinforcement, split, sourceLine
   return `
     <div class="card-block times-block-compact">
       <div class="card-block-header static">
-        <div class="card-block-title">${clockSVG} שעות יציאה <span class="estimated-tag">משוערות</span>${kavSuffix}</div>
+        <div class="card-block-title">${clockSVG} שעות יציאה <span class="estimated-tag">משוערות</span></div>
       </div>
-      ${renderDepartureList(filtered)}
+      ${renderDepartureList(filtered, "", stopKeyword)}
     </div>`;
 }
 
-function renderDepartureTimesStr(timesStr) {
+function renderDepartureTimesStr(timesStr, stopKeyword) {
   const times = timesStr.split("-");
   return `
     <div class="card-block times-block-compact">
@@ -241,8 +265,13 @@ function renderDepartureTimesStr(timesStr) {
       <div class="departure-list">
         ${times
           .map((t) => {
-            const passed = isTimePassed(t.trim()) ? " dep-time-passed" : "";
-            return `<span class="dep-time-item${passed}">${esc(t)}</span>`;
+            const time = t.trim();
+            const passed = isTimePassed(time) ? " dep-time-passed" : "";
+            const kavs = stopKeyword ? getKavForTime(time, stopKeyword) : [];
+            const kavHtml = kavs.length
+              ? `<span class="dep-time-kav-row">${kavs.map((l) => `<a class="block-kav-link" onclick="navigateTo('info',{activeKav:'${l.kavId}'})">${esc(l.label)}</a>`).join("")}</span>`
+              : "";
+            return `<span class="dep-time-item${passed}${kavs.length ? " dep-time-item--with-kavs" : ""}">${esc(time)}${kavHtml}</span>`;
           })
           .join("")}
       </div>
@@ -262,12 +291,12 @@ function renderRouteCard(route, opts) {
       route.departure_times,
       filterReinforcement,
       opts.splitReinforcement,
-      opts.sourceLines,
+      opts.stopKeyword,
     );
   }
 
   if (route.departure_times_str) {
-    bodyHtml += renderDepartureTimesStr(route.departure_times_str);
+    bodyHtml += renderDepartureTimesStr(route.departure_times_str, opts.stopKeyword);
   }
 
   if (route.stops && !hideStops) {
@@ -728,13 +757,11 @@ function renderRouteContent(view) {
   if (view === "train") {
     const toTrain = DATA.bus_routes[0];
     const fromTrain = DATA.bus_routes[1];
-    const trainLines = getRouteLinesByStop("רכבת כפר יהושע");
-    html += renderRouteCard(toTrain, { splitReinforcement: true, sourceLines: trainLines });
-    html += renderRouteCard(fromTrain, { splitReinforcement: true, sourceLines: trainLines });
+    html += renderRouteCard(toTrain, { splitReinforcement: true, stopKeyword: "רכבת כפר יהושע" });
+    html += renderRouteCard(fromTrain, { splitReinforcement: true, stopKeyword: "רכבת כפר יהושע" });
   } else if (view === "tzomet") {
     const tzomet = DATA.bus_routes[3];
-    const tzometLines = getRouteLinesByStop("צומת רמת דוד");
-    html += renderRouteCard(tzomet, { hideEvening: true, sourceLines: tzometLines });
+    html += renderRouteCard(tzomet, { hideEvening: true, stopKeyword: "צומת רמת דוד" });
   } else if (view === "internal") {
     const internal = DATA.bus_routes[2];
     if (internal.note) {
@@ -742,13 +769,12 @@ function renderRouteContent(view) {
     }
     if (internal.sub_routes) {
       internal.sub_routes.forEach((sub) => {
-        const keyword = sub.name.includes("מסלול א")
+        const stopKeyword = sub.name.includes("מסלול א")
           ? "גף טיסה 109"
           : sub.name.includes("מסלול ב")
             ? "גף טיסה 105"
             : null;
-        const subLines = keyword ? getRouteLinesByStop(keyword) : [];
-        html += renderRouteCard(sub, { sourceLines: subLines });
+        html += renderRouteCard(sub, { stopKeyword });
       });
     }
   } else if (view === "hada") {
