@@ -651,7 +651,7 @@ function renderNavButtons() {
     },
     {
       icon: '<span class="material-symbols-rounded">alt_route</span>',
-      label: "צומת רמת דוד - בסיס",
+      label: "צומת רמת דוד - רחבת היסעים",
       sub: "שאטל מהצומת לבסיס",
       view: "tzomet",
       btnClass: "nav-btn--tzomet",
@@ -1085,7 +1085,7 @@ function renderInfoContent() {
 
   // Old routes
   html += `<div class="info-section">
-    <h2 class="info-section-title">קוי שאטל</h2>
+    <h2 class="info-section-title">קווי שאטל</h2>
     ${renderOldRouteTabsHtml()}
     <div id="oldroute-content" class="route-content">${renderOldRouteContentHtml()}</div>
   </div>`;
