@@ -230,7 +230,7 @@ function renderDepartureTable(departures, filterReinforcement, split, stopKeywor
       html += `
         <div class="card-block times-block-compact times-block--reinforce${reinforceOpen}" onclick="this.classList.toggle('open')">
           <div class="card-block-header reinforce-header">
-            <div class="card-block-title">${reinforceSVG} תגבור ראשון וחמישי <span class="estimated-tag">משוער</span></div>
+            <div class="card-block-title">${reinforceSVG} שעות נוספות ללו"ז הרגיל <span class="estimated-tag">משוער</span></div>
             <div class="card-block-meta">${smallChevronSVG}</div>
           </div>
           <div class="card-block-body">
@@ -655,42 +655,42 @@ function renderNavButtons() {
       label: "רכבת כפר יהושע",
       sub: "",
       view: "train",
-      iconClass: "nav-btn-icon-wrap--train",
+      btnClass: "nav-btn--train",
     },
     {
       icon: '<span class="material-symbols-rounded">alt_route</span>',
       label: "צומת רמת דוד - בסיס",
       sub: "שאטל מהצומת לבסיס",
       view: "tzomet",
-      iconClass: "nav-btn-icon-wrap--tzomet",
+      btnClass: "nav-btn--tzomet",
     },
     {
       icon: '<span class="material-symbols-rounded">directions_bus</span>',
       label: "פיזור למקומות עבודה",
       sub: "הסעות פנים בסיס",
       view: "internal",
-      iconClass: "nav-btn-icon-wrap--internal",
+      btnClass: "nav-btn--internal",
     },
     {
       icon: '<span class="material-symbols-rounded">restaurant</span>',
       label: 'חד"א',
       sub: "נסיעות לחדר האוכל",
       view: "hada",
-      iconClass: "nav-btn-icon-wrap--hada",
+      btnClass: "nav-btn--hada",
     },
     {
       icon: '<span class="material-symbols-rounded">call</span>',
       label: "שאטל לפי קריאה",
       sub: "הזמנת נסיעה",
       view: "oncall",
-      iconClass: "nav-btn-icon-wrap--oncall",
+      btnClass: "nav-btn--oncall",
     },
     {
       icon: '<span class="material-symbols-rounded">map</span>',
       label: "מקרא תחנות ומידע",
       sub: "מפה ומידע כללי",
       view: "info",
-      iconClass: "nav-btn-icon-wrap--info",
+      btnClass: "nav-btn--info",
     },
   ];
 
@@ -701,8 +701,8 @@ function renderNavButtons() {
   </div>`;
   html += `<div class="nav-buttons">`;
   buttons.forEach((btn) => {
-    html += `<div class="nav-btn" onclick="navigateTo('${btn.view}')">
-      <div class="nav-btn-icon-wrap ${btn.iconClass}">
+    html += `<div class="nav-btn ${btn.btnClass}" onclick="navigateTo('${btn.view}')">
+      <div class="nav-btn-icon-wrap">
         <span class="nav-btn-icon">${btn.icon}</span>
       </div>
       <div class="nav-btn-text">
