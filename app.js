@@ -191,11 +191,7 @@ function renderDepartureList(items, extraClass, stopKeyword) {
       .map((d) => {
         const passed = isTimePassed(d.time) ? " dep-time-passed" : "";
         const reinforce = d.note ? "dep-time-item--reinforce" : "";
-        const kavs = stopKeyword ? getKavForTime(d.time, stopKeyword) : [];
-        const kavHtml = kavs.length
-          ? `<span class="dep-time-kav-row">${kavs.map((l) => `<a class="block-kav-link" onclick="navigateTo('info',{activeKav:'${l.kavId}'})">${esc(l.label)}</a>`).join("")}</span>`
-          : "";
-        return `<span class="dep-time-item ${reinforce} ${passed}${kavs.length ? " dep-time-item--with-kavs" : ""}">${esc(d.time)}${kavHtml}</span>`;
+        return `<span class="dep-time-item ${reinforce} ${passed}">${esc(d.time)}</span>`;
       })
       .join("")}
   </div>`;
@@ -270,11 +266,7 @@ function renderDepartureTimesStr(timesStr, stopKeyword) {
           .map((t) => {
             const time = t.trim();
             const passed = isTimePassed(time) ? " dep-time-passed" : "";
-            const kavs = stopKeyword ? getKavForTime(time, stopKeyword) : [];
-            const kavHtml = kavs.length
-              ? `<span class="dep-time-kav-row">${kavs.map((l) => `<a class="block-kav-link" onclick="navigateTo('info',{activeKav:'${l.kavId}'})">${esc(l.label)}</a>`).join("")}</span>`
-              : "";
-            return `<span class="dep-time-item${passed}${kavs.length ? " dep-time-item--with-kavs" : ""}">${esc(time)}${kavHtml}</span>`;
+            return `<span class="dep-time-item${passed}">${esc(time)}</span>`;
           })
           .join("")}
       </div>
@@ -922,16 +914,11 @@ function renderHadaCard(title, trips) {
         return `<div class="stop-item${hada}"><span class="stop-num">${i + 1}</span>${esc(stop)}</div>`;
       })
       .join("");
-    const kavNum = trip.routeName?.match(/^קו\s*(\d+)/)?.[1];
-    const kavLink = kavNum
-      ? `<a class="trip-kav-link" onclick="event.stopPropagation();navigateTo('info',{activeKav:'kav${kavNum}'})" title="לוח זמנים מלא">קו ${kavNum}</a>`
-      : "";
     html += `
       <div class="card-block stops-block${passed}" onclick="this.classList.toggle('open')">
         <div class="card-block-header">
           <div class="card-block-title">${mapPinSVG} ${esc(trip.time)} <span class="estimated-tag">משוער</span></div>
           <div class="card-block-meta">
-            ${kavLink}
             <span class="stop-count-badge">${trip.stops.length} תחנות</span>
             ${smallChevronSVG}
           </div>

@@ -1214,52 +1214,6 @@ body::before {
   gap: var(--space-sm);
 }
 
-/* ─── Inline Kav Links (inside departure block titles) ─── */
-.block-kav-links {
-  display: inline-flex;
-  gap: 4px;
-  margin-right: 8px;
-  vertical-align: middle;
-}
-
-.block-kav-link {
-  display: inline-block;
-  font-size: 0.65rem;
-  font-weight: 700;
-  color: #7dd3fc;
-  background: rgba(125, 211, 252, 0.12);
-  border: 1px solid rgba(125, 211, 252, 0.25);
-  border-radius: 5px;
-  padding: 1px 6px;
-  text-decoration: none;
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s;
-}
-
-.block-kav-link:hover {
-  background: rgba(125, 211, 252, 0.25);
-  color: #38bdf8;
-}
-
-/* ─── Per-trip Kav Link (hada rows) ─── */
-.trip-kav-link {
-  font-size: 0.65rem;
-  font-weight: 700;
-  color: #7dd3fc;
-  background: rgba(125, 211, 252, 0.12);
-  border: 1px solid rgba(125, 211, 252, 0.25);
-  border-radius: 5px;
-  padding: 1px 6px;
-  text-decoration: none;
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s;
-}
-
-.trip-kav-link:hover {
-  background: rgba(125, 211, 252, 0.25);
-  color: #38bdf8;
-}
-
 /* ─── Countdown Banner ─── */
 .countdown-banner {
   display: flex;
