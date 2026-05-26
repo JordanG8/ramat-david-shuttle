@@ -847,7 +847,16 @@ function renderRouteContent(view) {
   } else if (view === "internal") {
     const internal = DATA.bus_routes[2];
     if (internal.note) {
-      html += `<div class="route-note top-note">${infoSVG} ${esc(internal.note)}</div>`;
+      const note = internal.note
+        .replace(
+          "איסוף ממקומות העבודה בשעה בסוף יום בשעה 17:15",
+          "איסוף ממקומות העבודה בסוף יום בשעה 17:15",
+        )
+        .replace(
+          "איסוף ממקומות העבודה בשעה בסוף יום 17:15",
+          "איסוף ממקומות העבודה בסוף יום בשעה 17:15",
+        );
+      html += `<div class="route-note top-note">${infoSVG} ${esc(note)}</div>`;
     }
     if (internal.sub_routes) {
       internal.sub_routes.forEach((sub) => {
@@ -1262,4 +1271,192 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
   renderCurrentView();
   startCountdownTimer();
+  maybeShowInstallPrompt();
 });
+
+// ─── PWA Install Prompt ───
+let deferredInstallPrompt = null;
+
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  const installBtn = document.querySelector("[data-install-action]");
+  if (installBtn) updateInstallPromptUI();
+});
+
+window.addEventListener("appinstalled", () => {
+  deferredInstallPrompt = null;
+  localStorage.setItem("shuttle_install_dismissed_v1", "installed");
+  closeInstallPrompt();
+});
+
+function isStandaloneApp() {
+  return (
+    window.matchMedia("(display-mode: standalone)").matches ||
+    window.navigator.standalone === true ||
+    document.referrer.startsWith("android-app://")
+  );
+}
+
+function detectPlatform() {
+  const ua = navigator.userAgent || "";
+  const isIOS = /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
+  const isIPadOS =
+    navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1;
+  const isAndroid = /Android/.test(ua);
+  const isSafari = /^((?!chrome|android|crios|fxios).)*safari/i.test(ua);
+  const isChrome = /Chrome|CriOS/i.test(ua) && !/Edg|OPR/i.test(ua);
+  const isFirefox = /Firefox|FxiOS/i.test(ua);
+  const isEdge = /Edg/i.test(ua);
+  const isSamsung = /SamsungBrowser/i.test(ua);
+  return {
+    isIOS: isIOS || isIPadOS,
+    isAndroid,
+    isSafari,
+    isChrome,
+    isFirefox,
+    isEdge,
+    isSamsung,
+    isMobile: isIOS || isIPadOS || isAndroid,
+  };
+}
+
+function maybeShowInstallPrompt() {
+  if (isStandaloneApp()) return;
+  if (localStorage.getItem("shuttle_install_dismissed_v1")) return;
+  setTimeout(showInstallPrompt, 700);
+}
+
+function showInstallPrompt() {
+  if (document.getElementById("install-prompt-overlay")) return;
+  const overlay = document.createElement("div");
+  overlay.id = "install-prompt-overlay";
+  overlay.className = "install-overlay";
+  overlay.innerHTML = `
+    <div class="install-modal" role="dialog" aria-modal="true" aria-labelledby="install-title">
+      <div class="install-icon-wrap">
+        <img src="/header.png" alt="" class="install-icon" />
+      </div>
+      <div class="install-headline">
+        <span class="install-badge">חדש!</span>
+        <h2 id="install-title" class="install-title">שמרו את האפליקציה במסך הבית</h2>
+        <p class="install-subtitle">גישה מהירה בלחיצה אחת — בלי לפתוח דפדפן, בלי לחפש קישורים. ממש כמו אפליקציה אמיתית.</p>
+      </div>
+      <div class="install-body" data-install-body></div>
+      <div class="install-actions">
+        <button type="button" class="install-btn-primary" data-install-action>הוסיפו עכשיו למסך הבית</button>
+        <button type="button" class="install-btn-secondary" data-install-dismiss>אולי בפעם אחרת</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  overlay
+    .querySelector("[data-install-dismiss]")
+    .addEventListener("click", dismissInstallPrompt);
+  overlay
+    .querySelector("[data-install-action]")
+    .addEventListener("click", handleInstallAction);
+  overlay.addEventListener("click", (e) => {
+    if (e.target === overlay) dismissInstallPrompt();
+  });
+  document.body.classList.add("install-modal-open");
+  updateInstallPromptUI();
+}
+
+function updateInstallPromptUI() {
+  const overlay = document.getElementById("install-prompt-overlay");
+  if (!overlay) return;
+  const body = overlay.querySelector("[data-install-body]");
+  const primaryBtn = overlay.querySelector("[data-install-action]");
+  const platform = detectPlatform();
+
+  if (deferredInstallPrompt) {
+    body.innerHTML = `
+      <div class="install-auto">
+        <span class="material-symbols-rounded install-auto-icon">auto_awesome</span>
+        <span>נתקין עבורכם בלחיצה אחת ⬇</span>
+      </div>
+    `;
+    primaryBtn.textContent = "התקינו עכשיו";
+    primaryBtn.dataset.mode = "auto";
+    return;
+  }
+
+  if (platform.isIOS) {
+    body.innerHTML = `
+      <ol class="install-steps">
+        <li><span class="install-step-num">1</span><span>לחצו על כפתור השיתוף ${shareIconIOS()} בתחתית הדפדפן (Safari)</span></li>
+        <li><span class="install-step-num">2</span><span>גללו ובחרו ${plusIcon()} <strong>"הוסף למסך הבית"</strong> (Add to Home Screen)</span></li>
+        <li><span class="install-step-num">3</span><span>אשרו עם <strong>"הוסף"</strong> בפינה הימנית העליונה</span></li>
+      </ol>
+    `;
+    primaryBtn.textContent = "הבנתי, סגרו";
+    primaryBtn.dataset.mode = "dismiss";
+    return;
+  }
+
+  if (platform.isAndroid) {
+    body.innerHTML = `
+      <ol class="install-steps">
+        <li><span class="install-step-num">1</span><span>לחצו על תפריט שלוש הנקודות ⋮ בפינת הדפדפן</span></li>
+        <li><span class="install-step-num">2</span><span>בחרו <strong>"הוסף למסך הבית"</strong> או <strong>"התקן אפליקציה"</strong></span></li>
+        <li><span class="install-step-num">3</span><span>אשרו <strong>"הוסף"</strong> ותקבלו אייקון על המסך</span></li>
+      </ol>
+    `;
+    primaryBtn.textContent = "הבנתי, סגרו";
+    primaryBtn.dataset.mode = "dismiss";
+    return;
+  }
+
+  body.innerHTML = `
+    <ol class="install-steps">
+      <li><span class="install-step-num">1</span><span>פתחו את תפריט הדפדפן (⋮ או ⋯)</span></li>
+      <li><span class="install-step-num">2</span><span>בחרו <strong>"התקן אפליקציה"</strong> או <strong>"הוסף לקיצורי דרך"</strong></span></li>
+      <li><span class="install-step-num">3</span><span>אשרו והאפליקציה תיפתח כחלון עצמאי</span></li>
+    </ol>
+  `;
+  primaryBtn.textContent = "הבנתי, סגרו";
+  primaryBtn.dataset.mode = "dismiss";
+}
+
+function shareIconIOS() {
+  return `<svg class="install-inline-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>`;
+}
+function plusIcon() {
+  return `<svg class="install-inline-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>`;
+}
+
+async function handleInstallAction(e) {
+  const mode = e.currentTarget.dataset.mode;
+  if (mode === "auto" && deferredInstallPrompt) {
+    try {
+      deferredInstallPrompt.prompt();
+      const choice = await deferredInstallPrompt.userChoice;
+      deferredInstallPrompt = null;
+      if (choice && choice.outcome === "accepted") {
+        localStorage.setItem("shuttle_install_dismissed_v1", "installed");
+        closeInstallPrompt();
+      } else {
+        dismissInstallPrompt();
+      }
+    } catch (err) {
+      console.warn("Install prompt failed", err);
+      dismissInstallPrompt();
+    }
+    return;
+  }
+  dismissInstallPrompt();
+}
+
+function dismissInstallPrompt() {
+  localStorage.setItem("shuttle_install_dismissed_v1", String(Date.now()));
+  closeInstallPrompt();
+}
+
+function closeInstallPrompt() {
+  const overlay = document.getElementById("install-prompt-overlay");
+  if (!overlay) return;
+  overlay.classList.add("install-overlay-closing");
+  document.body.classList.remove("install-modal-open");
+  setTimeout(() => overlay.remove(), 220);
+}
