@@ -47,17 +47,54 @@ const smallChevronSVG = `<svg class="tl-chevron" viewBox="0 0 24 24" fill="none"
 const arrowSVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>`;
 
 // ─── Render Stations ───
+function parseTopicNote(noteText) {
+  const m = noteText.match(/^([^-]+?)\s*-\s*(.+)$/);
+  if (!m) return null;
+  const topic = m[1].trim();
+  const detail = m[2].trim();
+  let icon = null;
+  let label = topic;
+  if (topic.includes("רכב")) {
+    icon = `<span class="material-symbols-rounded">train</span>`;
+    label = "רכבת";
+  } else if (topic.includes("חדר אוכל") || topic.includes('חד"א')) {
+    icon = `<span class="material-symbols-rounded">restaurant</span>`;
+    label = 'חד"א';
+  }
+  return icon ? { icon, topic: label, detail } : null;
+}
+
+function renderUnitNotesBlock(unit) {
+  const noteIcon = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`;
+  const notes = [];
+  if (unit.notes) notes.push(unit.notes);
+  if (unit.notes2) notes.push(unit.notes2);
+  if (notes.length === 0) return "";
+
+  const parsed = notes.map(parseTopicNote);
+  if (parsed.every((p) => p !== null)) {
+    const items = parsed
+      .map(
+        (p) => `
+        <div class="unit-note-item">
+          <span class="unit-note-tag">${p.icon}<span>${esc(p.topic)}</span></span>
+          <span class="unit-note-detail">${esc(p.detail)}</span>
+        </div>`,
+      )
+      .join("");
+    return `<div class="unit-notes-block">${items}</div>`;
+  }
+
+  return notes
+    .map((n) => `<div class="unit-note">${noteIcon}${esc(n)}</div>`)
+    .join("");
+}
+
 function renderStationsHtml() {
   return DATA.units
     .map((unit) => {
       const deptCount = unit.departments.length;
-      const noteIcon = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`;
-      let noteHtml = unit.notes
-        ? `<div class="unit-note">${noteIcon}${esc(unit.notes)}</div>`
-        : "";
-      if (unit.notes2) {
-        noteHtml += `<div class="unit-note">${noteIcon}${esc(unit.notes2)}</div>`;
-      }
+      const noteHtml = renderUnitNotesBlock(unit);
 
       const deptsHtml = unit.departments
         .map((dept) => {
@@ -146,6 +183,34 @@ function renderStopsCard(stops) {
       </div>
       <div class="stops-list">
         ${stopsHtml}
+      </div>
+    </div>`;
+}
+
+function renderTimeStopsBlock(time, stops, opts) {
+  opts = opts || {};
+  const passed = isTimePassed(time) ? " trip-passed" : "";
+  const reinforce = opts.reinforce ? " stops-block--reinforce" : "";
+  const stopsHtml = (stops || [])
+    .map((stop, i) => {
+      const hada = isHadaStop(stop) ? " stop-hada" : "";
+      return `<div class="stop-item${hada}"><span class="stop-num">${i + 1}</span>${esc(stop)}</div>`;
+    })
+    .join("");
+  const countBadge = (stops && stops.length)
+    ? `<span class="stop-count-badge">${stops.length} תחנות</span>`
+    : "";
+  return `
+    <div class="card-block stops-block${passed}${reinforce}" data-time="${esc(time)}" onclick="event.stopPropagation(); this.classList.toggle('open')">
+      <div class="card-block-header">
+        <div class="card-block-title">${mapPinSVG} <span class="block-time">${esc(time)}</span> <span class="estimated-tag">משוער</span></div>
+        <div class="card-block-meta">
+          ${countBadge}
+          ${smallChevronSVG}
+        </div>
+      </div>
+      <div class="card-block-body">
+        <div class="stops-list">${stopsHtml}</div>
       </div>
     </div>`;
 }
@@ -275,27 +340,50 @@ function renderDepartureTimesStr(timesStr, stopKeyword) {
 
 function renderRouteCard(route, opts) {
   opts = opts || {};
-  const filterReinforcement = opts.filterReinforcement || "all";
   const titleOverride = opts.title;
-  const hideStops = opts.hideStops;
 
+  // Collect all departure times as trips
+  const trips = [];
+  if (route.departure_times) {
+    route.departure_times.forEach((d) => {
+      trips.push({ time: d.time, note: d.note });
+    });
+  }
+  if (route.departure_times_str) {
+    route.departure_times_str.split("-").forEach((t) => {
+      trips.push({ time: t.trim() });
+    });
+  }
+
+  const stops = route.stops || [];
   let bodyHtml = "";
 
-  if (route.departure_times) {
-    bodyHtml += renderDepartureTable(
-      route.departure_times,
-      filterReinforcement,
-      opts.splitReinforcement,
-      opts.stopKeyword,
-    );
-  }
-
-  if (route.departure_times_str) {
-    bodyHtml += renderDepartureTimesStr(route.departure_times_str, opts.stopKeyword);
-  }
-
-  if (route.stops && !hideStops) {
-    bodyHtml += renderStopsCard(route.stops);
+  if (opts.splitReinforcement) {
+    const regular = trips.filter((t) => !t.note);
+    const reinforce = trips.filter((t) => !!t.note);
+    regular.forEach((t) => {
+      bodyHtml += renderTimeStopsBlock(t.time, stops);
+    });
+    if (reinforce.length > 0) {
+      const reinforceOpen = isReinforcementDay() ? " open" : "";
+      const inner = reinforce
+        .map((t) => renderTimeStopsBlock(t.time, stops, { reinforce: true }))
+        .join("");
+      bodyHtml += `
+        <div class="card-block reinforce-group times-block--reinforce${reinforceOpen}">
+          <div class="card-block-header reinforce-header" onclick="this.parentElement.classList.toggle('open')">
+            <div class="card-block-title">${reinforceSVG} שעות נוספות ימים א' וה' <span class="estimated-tag">משוער</span></div>
+            <div class="card-block-meta">${smallChevronSVG}</div>
+          </div>
+          <div class="card-block-body">
+            <div class="reinforce-group-inner">${inner}</div>
+          </div>
+        </div>`;
+    }
+  } else {
+    trips.forEach((t) => {
+      bodyHtml += renderTimeStopsBlock(t.time, stops, { reinforce: !!t.note });
+    });
   }
 
   if (route.note) {
@@ -699,7 +787,6 @@ function renderNavButtons() {
       </div>
       <div class="nav-btn-text">
         <span class="nav-btn-label">${esc(btn.label)}</span>
-        <span class="nav-btn-sub">${esc(btn.sub)}</span>
       </div>
     </div>`;
   });
@@ -844,9 +931,15 @@ function renderCurrentView() {
       requestAnimationFrame(() => {
         const timeToFind = highlightTime;
         highlightTime = null;
-        // Find dep-time-item or dep-chip-time matching the time
+        const block = container.querySelector(`.stops-block[data-time="${timeToFind}"]`);
+        if (block) {
+          block.classList.add("open", "dep-time-highlight");
+          block.scrollIntoView({ behavior: "smooth", block: "center" });
+          setTimeout(() => block.classList.remove("dep-time-highlight"), 3000);
+          return;
+        }
         const allTimeEls = container.querySelectorAll(
-          ".dep-time-item, .dep-chip-time, .card-block-title, .sched-time",
+          ".dep-time-item, .dep-chip-time, .block-time, .sched-time",
         );
         for (const el of allTimeEls) {
           if (el.textContent.trim() === timeToFind) {
@@ -901,32 +994,13 @@ function renderHadaCard(title, trips) {
 
   let html = `<div class="route-card">
     <div class="route-card-header">
-      <div class="route-card-title">${title}</div>
+      <div class="route-card-title">${formatRouteTitle(title)}</div>
     </div>
     ${countdown}
     <div class="route-card-body">`;
 
   trips.forEach((trip) => {
-    const passed = isTimePassed(trip.time) ? " trip-passed" : "";
-    const stopsHtml = trip.stops
-      .map((stop, i) => {
-        const hada = isHadaStop(stop) ? " stop-hada" : "";
-        return `<div class="stop-item${hada}"><span class="stop-num">${i + 1}</span>${esc(stop)}</div>`;
-      })
-      .join("");
-    html += `
-      <div class="card-block stops-block${passed}" onclick="this.classList.toggle('open')">
-        <div class="card-block-header">
-          <div class="card-block-title">${mapPinSVG} ${esc(trip.time)} <span class="estimated-tag">משוער</span></div>
-          <div class="card-block-meta">
-            <span class="stop-count-badge">${trip.stops.length} תחנות</span>
-            ${smallChevronSVG}
-          </div>
-        </div>
-        <div class="card-block-body">
-          <div class="stops-list">${stopsHtml}</div>
-        </div>
-      </div>`;
+    html += renderTimeStopsBlock(trip.time, trip.stops);
   });
 
   html += `</div></div>`;
@@ -1073,11 +1147,11 @@ function renderInfoContent() {
     <div class="legend">
       <span class="legend-item">
         <span class="badge badge-service"></span>
-        תחנת שירות - תחנה ששאטל עוצר בה
+        תחנת שירות
       </span>
       <span class="legend-item">
         <span class="badge badge-alt"></span>
-        תחנה חלופית - תחנה שממנה נדרש להגיע לתחנת שירות
+        תחנה חלופית
       </span>
     </div>
     <div class="stations-grid">${renderStationsHtml()}</div>
