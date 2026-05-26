@@ -197,17 +197,10 @@ function renderTimeStopsBlock(time, stops, opts) {
       return `<div class="stop-item${hada}"><span class="stop-num">${i + 1}</span>${esc(stop)}</div>`;
     })
     .join("");
-  const countBadge = (stops && stops.length)
-    ? `<span class="stop-count-badge">${stops.length} תחנות</span>`
-    : "";
   return `
-    <div class="card-block stops-block${passed}${reinforce}" data-time="${esc(time)}" onclick="event.stopPropagation(); this.classList.toggle('open')">
-      <div class="card-block-header">
+    <div class="card-block stops-block open${passed}${reinforce}" data-time="${esc(time)}">
+      <div class="card-block-header static">
         <div class="card-block-title">${mapPinSVG} <span class="block-time">${esc(time)}</span> <span class="estimated-tag">משוער</span></div>
-        <div class="card-block-meta">
-          ${countBadge}
-          ${smallChevronSVG}
-        </div>
       </div>
       <div class="card-block-body">
         <div class="stops-list">${stopsHtml}</div>
@@ -1107,12 +1100,11 @@ function renderScheduleEntry(entry) {
       })
       .join("");
 
-    return `<div class="sched-entry sched-trip">
-      <div class="sched-trip-header" onclick="this.parentElement.classList.toggle('open')">
+    return `<div class="sched-entry sched-trip open">
+      <div class="sched-trip-header">
         ${timeHtml}
         <span class="sched-type-badge sched-badge-trip">נסיעה</span>
         <span class="sched-stop-count">${entry.stops.length} תחנות</span>
-        ${smallChevronSVG}
       </div>
       <div class="sched-trip-stops">
         <div class="stops-list">${stopsHtml}</div>
