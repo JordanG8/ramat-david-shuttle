@@ -1333,7 +1333,7 @@ function showInstallPrompt() {
   overlay.innerHTML = `
     <div class="install-modal" role="dialog" aria-modal="true" aria-labelledby="install-title">
       <div class="install-icon-wrap">
-        <img src="/header.png" alt="" class="install-icon" />
+        <img src="/header.jpg" alt="" class="install-icon" />
       </div>
       <div class="install-headline">
         <span class="install-badge">חדש!</span>
