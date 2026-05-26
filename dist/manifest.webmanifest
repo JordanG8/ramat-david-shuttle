@@ -1,0 +1,27 @@
+{
+  "name": "שאטל כנף 1 — רמת דוד",
+  "short_name": "שאטל 1",
+  "description": "אפליקציית השאטלים של בסיס כנף 1 — רמת דוד",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#eef1f5",
+  "theme_color": "#1c3150",
+  "lang": "he",
+  "dir": "rtl",
+  "icons": [
+    {
+      "src": "/header.png",
+      "sizes": "1080x608",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/header.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
