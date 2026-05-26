@@ -2055,13 +2055,6 @@ body::before {
   align-items: center;
   gap: var(--space-sm);
   padding: var(--space-sm) var(--space-md);
-  cursor: pointer;
-  user-select: none;
-  transition: background 0.15s ease;
-}
-
-.sched-trip-header:hover {
-  background: var(--olive-50);
 }
 
 .sched-trip-header .tl-chevron {
