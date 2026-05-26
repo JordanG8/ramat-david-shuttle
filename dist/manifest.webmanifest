@@ -6,20 +6,26 @@
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#eef1f5",
+  "background_color": "#ffffff",
   "theme_color": "#1c3150",
   "lang": "he",
   "dir": "rtl",
   "icons": [
     {
-      "src": "/header.png",
-      "sizes": "1080x608",
+      "src": "/icon-192.png",
+      "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/header.png",
-      "sizes": "any",
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable-512.png",
+      "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
     }

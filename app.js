@@ -1286,7 +1286,6 @@ window.addEventListener("beforeinstallprompt", (e) => {
 
 window.addEventListener("appinstalled", () => {
   deferredInstallPrompt = null;
-  localStorage.setItem("shuttle_install_dismissed_v1", "installed");
   closeInstallPrompt();
 });
 
@@ -1323,7 +1322,6 @@ function detectPlatform() {
 
 function maybeShowInstallPrompt() {
   if (isStandaloneApp()) return;
-  if (localStorage.getItem("shuttle_install_dismissed_v1")) return;
   setTimeout(showInstallPrompt, 700);
 }
 
@@ -1383,15 +1381,28 @@ function updateInstallPromptUI() {
   }
 
   if (platform.isIOS) {
-    body.innerHTML = `
-      <ol class="install-steps">
-        <li><span class="install-step-num">1</span><span>לחצו על כפתור השיתוף ${shareIconIOS()} בתחתית הדפדפן (Safari)</span></li>
-        <li><span class="install-step-num">2</span><span>גללו ובחרו ${plusIcon()} <strong>"הוסף למסך הבית"</strong> (Add to Home Screen)</span></li>
-        <li><span class="install-step-num">3</span><span>אשרו עם <strong>"הוסף"</strong> בפינה הימנית העליונה</span></li>
-      </ol>
-    `;
-    primaryBtn.textContent = "הבנתי, סגרו";
-    primaryBtn.dataset.mode = "dismiss";
+    const canShare = typeof navigator.share === "function";
+    if (canShare) {
+      body.innerHTML = `
+        <div class="install-auto">
+          <span class="material-symbols-rounded install-auto-icon">ios_share</span>
+          <span>פתחו את תפריט השיתוף ובחרו <strong>"הוסף למסך הבית"</strong></span>
+        </div>
+        <p class="install-ios-hint">לחיצה אחת תפתח את התפריט. גללו ובחרו ${plusIcon()} <strong>"הוסף למסך הבית"</strong>.</p>
+      `;
+      primaryBtn.textContent = "פתחו את תפריט ההתקנה";
+      primaryBtn.dataset.mode = "ios-share";
+    } else {
+      body.innerHTML = `
+        <ol class="install-steps">
+          <li><span class="install-step-num">1</span><span>לחצו על כפתור השיתוף ${shareIconIOS()} בתחתית הדפדפן (Safari)</span></li>
+          <li><span class="install-step-num">2</span><span>גללו ובחרו ${plusIcon()} <strong>"הוסף למסך הבית"</strong> (Add to Home Screen)</span></li>
+          <li><span class="install-step-num">3</span><span>אשרו עם <strong>"הוסף"</strong> בפינה הימנית העליונה</span></li>
+        </ol>
+      `;
+      primaryBtn.textContent = "הבנתי, סגרו";
+      primaryBtn.dataset.mode = "dismiss";
+    }
     return;
   }
 
@@ -1434,7 +1445,6 @@ async function handleInstallAction(e) {
       const choice = await deferredInstallPrompt.userChoice;
       deferredInstallPrompt = null;
       if (choice && choice.outcome === "accepted") {
-        localStorage.setItem("shuttle_install_dismissed_v1", "installed");
         closeInstallPrompt();
       } else {
         dismissInstallPrompt();
@@ -1445,11 +1455,22 @@ async function handleInstallAction(e) {
     }
     return;
   }
+  if (mode === "ios-share") {
+    try {
+      await navigator.share({
+        title: document.title,
+        text: "שאטל כנף 1 — רמת דוד",
+        url: window.location.origin + "/",
+      });
+    } catch (err) {
+      // user cancelled or share unsupported — leave the modal open so they can read steps
+    }
+    return;
+  }
   dismissInstallPrompt();
 }
 
 function dismissInstallPrompt() {
-  localStorage.setItem("shuttle_install_dismissed_v1", String(Date.now()));
   closeInstallPrompt();
 }
 
