@@ -335,48 +335,23 @@ function renderRouteCard(route, opts) {
   opts = opts || {};
   const titleOverride = opts.title;
 
-  // Collect all departure times as trips
-  const trips = [];
-  if (route.departure_times) {
-    route.departure_times.forEach((d) => {
-      trips.push({ time: d.time, note: d.note });
-    });
-  }
-  if (route.departure_times_str) {
-    route.departure_times_str.split("-").forEach((t) => {
-      trips.push({ time: t.trim() });
-    });
-  }
-
-  const stops = route.stops || [];
   let bodyHtml = "";
 
-  if (opts.splitReinforcement) {
-    const regular = trips.filter((t) => !t.note);
-    const reinforce = trips.filter((t) => !!t.note);
-    regular.forEach((t) => {
-      bodyHtml += renderTimeStopsBlock(t.time, stops);
-    });
-    if (reinforce.length > 0) {
-      const reinforceOpen = isReinforcementDay() ? " open" : "";
-      const inner = reinforce
-        .map((t) => renderTimeStopsBlock(t.time, stops, { reinforce: true }))
-        .join("");
-      bodyHtml += `
-        <div class="card-block reinforce-group times-block--reinforce${reinforceOpen}">
-          <div class="card-block-header reinforce-header" onclick="this.parentElement.classList.toggle('open')">
-            <div class="card-block-title">${reinforceSVG} שעות נוספות ימים א' וה' <span class="estimated-tag">משוער</span></div>
-            <div class="card-block-meta">${smallChevronSVG}</div>
-          </div>
-          <div class="card-block-body">
-            <div class="reinforce-group-inner">${inner}</div>
-          </div>
-        </div>`;
-    }
-  } else {
-    trips.forEach((t) => {
-      bodyHtml += renderTimeStopsBlock(t.time, stops, { reinforce: !!t.note });
-    });
+  if (route.departure_times) {
+    bodyHtml += renderDepartureTable(
+      route.departure_times,
+      "all",
+      opts.splitReinforcement,
+      opts.stopKeyword,
+    );
+  }
+
+  if (route.departure_times_str) {
+    bodyHtml += renderDepartureTimesStr(route.departure_times_str, opts.stopKeyword);
+  }
+
+  if (route.stops && route.stops.length) {
+    bodyHtml += renderStopsCard(route.stops);
   }
 
   if (route.note) {
