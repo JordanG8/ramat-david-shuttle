@@ -171,10 +171,10 @@ const infoSVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" str
 
 function renderStopsCard(stops) {
   const stopsHtml = stops
-    .map(
-      (stop, i) =>
-        `<div class="stop-item"><span class="stop-num">${i + 1}</span>${esc(stop)}</div>`,
-    )
+    .map((stop, i) => {
+      const hada = isHadaStop(stop) ? " stop-hada" : "";
+      return `<div class="stop-item${hada}"><span class="stop-num">${i + 1}</span>${esc(stop)}</div>`;
+    })
     .join("");
   return `
     <div class="card-block stops-block-static">
@@ -827,7 +827,16 @@ function renderRouteContent(view) {
       html += `<div class="route-note top-note">${infoSVG} ${esc(note)}</div>`;
     }
     if (internal.sub_routes) {
-      internal.sub_routes.forEach((sub) => {
+      const orderedSubs = [...internal.sub_routes].sort((a, b) => {
+        const score = (s) =>
+          s.name.includes("מסלול א") || s.name.includes("109")
+            ? 0
+            : s.name.includes("מסלול ב") || s.name.includes("105")
+              ? 1
+              : 2;
+        return score(a) - score(b);
+      });
+      orderedSubs.forEach((sub) => {
         const stopKeyword = sub.name.includes("מסלול א")
           ? "גף טיסה 109"
           : sub.name.includes("מסלול ב")
@@ -963,34 +972,65 @@ function getHadaTrips() {
   return groups;
 }
 
-function renderHadaCard(title, trips) {
-  if (trips.length === 0) return "";
-
-  const upcoming = getUpcomingFromTimes(trips.map((t) => t.time));
-  const countdown = renderCountdownFromUpcoming(upcoming);
-
-  let html = `<div class="route-card">
-    <div class="route-card-header">
-      <div class="route-card-title">${formatRouteTitle(title)}</div>
-    </div>
-    ${countdown}
-    <div class="route-card-body">`;
-
+function groupHadaTripsByStops(trips) {
+  const map = new Map();
   trips.forEach((trip) => {
-    html += renderTimeStopsBlock(trip.time, trip.stops);
+    const sig = trip.stops.join("|");
+    if (!map.has(sig)) {
+      map.set(sig, { stops: trip.stops, times: [] });
+    }
+    map.get(sig).times.push(trip.time);
   });
+  const parseTime = (t) => {
+    const m = t.match(/^(\d{1,2}):(\d{2})$/);
+    return m ? parseInt(m[1]) * 60 + parseInt(m[2]) : 9999;
+  };
+  const result = Array.from(map.values());
+  result.forEach((r) => r.times.sort((a, b) => parseTime(a) - parseTime(b)));
+  result.sort((a, b) => parseTime(a.times[0]) - parseTime(b.times[0]));
+  return result;
+}
 
-  html += `</div></div>`;
-  return html;
+function renderHadaRouteCard(title, times, stops) {
+  const upcoming = getUpcomingFromTimes(times);
+  const countdown = renderCountdownFromUpcoming(upcoming);
+  const timesHtml = renderDepartureTimesStr(times.join("-"));
+  const stopsHtml = renderStopsCard(stops);
+
+  return `
+    <div class="route-card">
+      <div class="route-card-header">
+        <div class="route-card-title">${formatRouteTitle(title)}</div>
+      </div>
+      ${countdown}
+      <div class="route-card-body">
+        ${timesHtml}
+        ${stopsHtml}
+      </div>
+    </div>`;
+}
+
+function renderHadaSection(sectionLabel, trips) {
+  if (!trips || trips.length === 0) return "";
+  const routes = groupHadaTripsByStops(trips);
+
+  return routes
+    .map((route) => {
+      const first = route.stops[0];
+      const last = route.stops[route.stops.length - 1];
+      const title = first === last ? sectionLabel : `${first} - ${last}`;
+      return renderHadaRouteCard(title, route.times, route.stops);
+    })
+    .join("");
 }
 
 function renderHadaContent() {
   const groups = getHadaTrips();
   let html = "";
 
-  html += renderHadaCard('חדר אוכל - מסלול א׳', groups["109"]);
-  html += renderHadaCard('חדר אוכל - מסלול ב׳', groups["105"]);
-  html += renderHadaCard('חד"א - טייסת תחזוקה', groups.maintenance);
+  html += renderHadaSection('חדר אוכל - מסלול א׳', groups["109"]);
+  html += renderHadaSection('חדר אוכל - מסלול ב׳', groups["105"]);
+  html += renderHadaSection('חד"א - טייסת תחזוקה', groups.maintenance);
 
   return html;
 }
