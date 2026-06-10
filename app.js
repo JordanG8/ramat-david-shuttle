@@ -811,7 +811,7 @@ function renderRouteContent(view) {
     html += renderRouteCard(fromTrain, { splitReinforcement: true, stopKeyword: "רכבת כפר יהושע" });
   } else if (view === "tzomet") {
     const tzomet = DATA.bus_routes[3];
-    html += renderRouteCard(tzomet, { hideEvening: true, stopKeyword: "צומת רמת דוד" });
+    html += renderRouteCard(tzomet, { hideEvening: true, splitReinforcement: true, stopKeyword: "צומת רמת דוד" });
   } else if (view === "internal") {
     const internal = DATA.bus_routes[2];
     if (internal.note) {
@@ -842,7 +842,7 @@ function renderRouteContent(view) {
           : sub.name.includes("מסלול ב")
             ? "גף טיסה 105"
             : null;
-        html += renderRouteCard(sub, { stopKeyword });
+        html += renderRouteCard(sub, { stopKeyword, splitReinforcement: true });
       });
     }
   } else if (view === "hada") {
@@ -972,23 +972,109 @@ function getHadaTrips() {
   return groups;
 }
 
-function groupHadaTripsByStops(trips) {
-  const map = new Map();
-  trips.forEach((trip) => {
-    const sig = trip.stops.join("|");
-    if (!map.has(sig)) {
-      map.set(sig, { stops: trip.stops, times: [] });
-    }
-    map.get(sig).times.push(trip.time);
+// ─── Sync destination tabs (train / צומת) from the line schedules ───
+// The רכבת and צומת tabs are DERIVED from OLD_ROUTES so they can never drift
+// out of sync with the קו 1–5 tables. (חד"א is already derived via getHadaTrips.)
+// A time is marked as reinforcement ("תגבור") only if it appears *exclusively*
+// on a reinforcement line (קו 5) and on no regular line.
+function deriveDeparturesByStops(predicate) {
+  const toMin = (t) => {
+    const m = t.match(/^(\d{1,2}):(\d{2})$/);
+    return m ? parseInt(m[1]) * 60 + parseInt(m[2]) : 9999;
+  };
+  const regular = new Set();
+  const reinforce = new Set();
+  OLD_ROUTES.forEach((route) => {
+    const isReinforce = /תגבור/.test(route.name);
+    route.schedule.forEach((entry) => {
+      if (entry.type !== "נסיעה" || !entry.stops || !entry.stops.length) return;
+      if (!/^\d{1,2}:\d{2}$/.test(entry.time)) return;
+      if (!predicate(entry.stops)) return;
+      (isReinforce ? reinforce : regular).add(entry.time);
+    });
   });
+  const times = Array.from(new Set([...regular, ...reinforce]));
+  times.sort((a, b) => toMin(a) - toMin(b));
+  return times.map((time) =>
+    regular.has(time) ? { time } : { time, note: "תגבור- רק בימי ראשון וחמישי" },
+  );
+}
+
+function syncDestinationsFromLines() {
+  const routes = DATA && DATA.bus_routes;
+  if (!Array.isArray(routes)) return;
+  const TRAIN = "רכבת כפר יהושע";
+  const TZOMET = "צומת רמת דוד";
+
+  if (routes[0]) {
+    routes[0].departure_times = deriveDeparturesByStops((stops) =>
+      stops[stops.length - 1].includes(TRAIN),
+    );
+    delete routes[0].departure_times_str;
+  }
+  if (routes[1]) {
+    routes[1].departure_times = deriveDeparturesByStops((stops) =>
+      stops[0].includes(TRAIN),
+    );
+    delete routes[1].departure_times_str;
+  }
+  if (routes[3]) {
+    routes[3].departure_times = deriveDeparturesByStops((stops) =>
+      stops.some((s) => s.includes(TZOMET)),
+    );
+    delete routes[3].departure_times_str;
+  }
+
+  // Internal work-area dispersal: every line trip that stops at the area
+  const internal = routes[2];
+  if (internal && Array.isArray(internal.sub_routes)) {
+    internal.sub_routes.forEach((sub) => {
+      const kw = /109|מסלול א/.test(sub.name)
+        ? "גף טיסה 109"
+        : /105|מסלול ב/.test(sub.name)
+          ? "גף טיסה 105"
+          : null;
+      if (!kw) return;
+      sub.departure_times = deriveDeparturesByStops((stops) =>
+        stops.some((s) => s.includes(kw)),
+      );
+      delete sub.departure_times_str;
+    });
+  }
+}
+
+// Merge an area's חד"א trips into at most two cards — one per direction
+// (אל חד"א / מחד"א) — so each time appears once and near-identical line
+// variants collapse into a single readable card per direction.
+function buildHadaCards(maslulLabel, trips) {
+  if (!trips || trips.length === 0) return [];
   const parseTime = (t) => {
     const m = t.match(/^(\d{1,2}):(\d{2})$/);
     return m ? parseInt(m[1]) * 60 + parseInt(m[2]) : 9999;
   };
-  const result = Array.from(map.values());
-  result.forEach((r) => r.times.sort((a, b) => parseTime(a) - parseTime(b)));
-  result.sort((a, b) => parseTime(a.times[0]) - parseTime(b.times[0]));
-  return result;
+  const dirs = { to: [], from: [] };
+  trips.forEach((t) => {
+    // first stop is חד"א → departing (includes loops); else it arrives there
+    (isHadaStop(t.stops[0]) ? dirs.from : dirs.to).push(t);
+  });
+  const active = [
+    ["to", 'אל חד"א'],
+    ["from", 'מחד"א'],
+  ].filter(([k]) => dirs[k].length);
+
+  return active.map(([k, dirLabel]) => {
+    const bucket = dirs[k];
+    const times = Array.from(new Set(bucket.map((t) => t.time))).sort(
+      (a, b) => parseTime(a) - parseTime(b),
+    );
+    // representative path = the most complete (longest) variant in the bucket
+    const stops = bucket.reduce(
+      (best, t) => (t.stops.length > best.length ? t.stops : best),
+      [],
+    );
+    const title = active.length > 1 ? `${maslulLabel} · ${dirLabel}` : maslulLabel;
+    return { title, times, stops };
+  });
 }
 
 function renderHadaRouteCard(title, times, stops) {
@@ -1010,29 +1096,17 @@ function renderHadaRouteCard(title, times, stops) {
     </div>`;
 }
 
-function renderHadaSection(sectionLabel, trips) {
-  if (!trips || trips.length === 0) return "";
-  const routes = groupHadaTripsByStops(trips);
-
-  return routes
-    .map((route) => {
-      const first = route.stops[0];
-      const last = route.stops[route.stops.length - 1];
-      const title = first === last ? sectionLabel : `${first} - ${last}`;
-      return renderHadaRouteCard(title, route.times, route.stops);
-    })
-    .join("");
-}
-
 function renderHadaContent() {
   const groups = getHadaTrips();
-  let html = "";
+  const cards = [
+    ...buildHadaCards("מסלול א׳", groups["109"]),
+    ...buildHadaCards("מסלול ב׳", groups["105"]),
+    ...buildHadaCards("מסלול תחזוקה", groups.maintenance),
+  ];
 
-  html += renderHadaSection('חדר אוכל - מסלול א׳', groups["109"]);
-  html += renderHadaSection('חדר אוכל - מסלול ב׳', groups["105"]);
-  html += renderHadaSection('חד"א - טייסת תחזוקה', groups.maintenance);
-
-  return html;
+  return cards
+    .map((c) => renderHadaRouteCard(c.title, c.times, c.stops))
+    .join("");
 }
 
 // ─── On-Call Shuttle ───
@@ -1272,6 +1346,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.body.appendChild(toast);
     setTimeout(() => toast.remove(), 5000);
   }
+  // Keep the destination tabs (רכבת / צומת) in sync with the line tables
+  syncDestinationsFromLines();
   // Set the hash to reflect the initial view
   if (!window.location.hash) {
     history.replaceState(null, "", "#home");
