@@ -21,7 +21,7 @@ export let DATA = {
       name: "טייסת 160",
       station: "רחבת היסעים",
       departments: [
-        { name: "גף טיסה", type: "תחנת שירות" },
+        { name: "גף טיסה", type: "תחנה חלופית", goes_to: "רחבת היסעים" },
         { name: "גף טכני", type: "תחנת שירות" },
       ],
     },
