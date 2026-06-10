@@ -842,7 +842,7 @@ function renderRouteContent(view) {
           : sub.name.includes("מסלול ב")
             ? "גף טיסה 105"
             : null;
-        html += renderRouteCard(sub, { stopKeyword });
+        html += renderRouteCard(sub, { stopKeyword, splitReinforcement: true });
       });
     }
   } else if (view === "hada") {
@@ -1023,6 +1023,23 @@ function syncDestinationsFromLines() {
       stops.some((s) => s.includes(TZOMET)),
     );
     delete routes[3].departure_times_str;
+  }
+
+  // Internal work-area dispersal: every line trip that stops at the area
+  const internal = routes[2];
+  if (internal && Array.isArray(internal.sub_routes)) {
+    internal.sub_routes.forEach((sub) => {
+      const kw = /109|מסלול א/.test(sub.name)
+        ? "גף טיסה 109"
+        : /105|מסלול ב/.test(sub.name)
+          ? "גף טיסה 105"
+          : null;
+      if (!kw) return;
+      sub.departure_times = deriveDeparturesByStops((stops) =>
+        stops.some((s) => s.includes(kw)),
+      );
+      delete sub.departure_times_str;
+    });
   }
 }
 
