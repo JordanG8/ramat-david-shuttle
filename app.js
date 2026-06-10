@@ -1025,7 +1025,10 @@ function syncDestinationsFromLines() {
     delete routes[3].departure_times_str;
   }
 
-  // Internal work-area dispersal: every line trip that stops at the area
+  // Internal work-area dispersal: line trips that depart from רחבת היסעים
+  // and stop at the area. Trips that originate elsewhere (רכבת, חד"א, צומת)
+  // are excluded — their time is the departure from that origin, not from
+  // the רחבה, so showing them here is misleading.
   const internal = routes[2];
   if (internal && Array.isArray(internal.sub_routes)) {
     internal.sub_routes.forEach((sub) => {
@@ -1035,8 +1038,10 @@ function syncDestinationsFromLines() {
           ? "גף טיסה 105"
           : null;
       if (!kw) return;
-      sub.departure_times = deriveDeparturesByStops((stops) =>
-        stops.some((s) => s.includes(kw)),
+      sub.departure_times = deriveDeparturesByStops(
+        (stops) =>
+          stops[0].includes("רחבת היסעים") &&
+          stops.some((s) => s.includes(kw)),
       );
       delete sub.departure_times_str;
     });
