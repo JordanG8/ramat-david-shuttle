@@ -435,6 +435,7 @@ export let OLD_ROUTES = [
     schedule: [
       { time: "07:20", type: "נסיעה", stops: SEQ_K5_SHORT },
       { time: "07:50", type: "נסיעה", stops: SEQ_K5_SHORT },
+      { time: "08:30", type: "נסיעה", stops: SEQ_K5_SHORT },
       { time: "08:50", type: "נסיעה", stops: SEQ_K5_SHORT },
       { time: "09:20", type: "נסיעה", stops: SEQ_K5_OUT_TRAIN },
       { time: "09:40", type: "נסיעה", stops: SEQ_K5_LONG_LOOP },
