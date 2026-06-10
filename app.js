@@ -1017,6 +1017,8 @@ function syncDestinationsFromLines() {
       stops[0].includes(TRAIN),
     );
     delete routes[1].departure_times_str;
+    routes[1].note =
+      "נסיעות מהרכבת אחר הצהריים מסתיימות ברחבת היסעים ואינן ממשיכות פנים בסיס לכיוון 105";
   }
   if (routes[3]) {
     routes[3].departure_times = deriveDeparturesByStops((stops) =>
