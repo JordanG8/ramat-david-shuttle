@@ -1189,11 +1189,12 @@ function renderScheduleEntry(entry) {
       })
       .join("");
 
-    return `<div class="sched-entry sched-trip open">
+    return `<div class="sched-entry sched-trip" onclick="this.classList.toggle('open')">
       <div class="sched-trip-header">
         ${timeHtml}
         <span class="sched-type-badge sched-badge-trip">נסיעה</span>
         <span class="sched-stop-count">${entry.stops.length} תחנות</span>
+        ${smallChevronSVG}
       </div>
       <div class="sched-trip-stops">
         <div class="stops-list">${stopsHtml}</div>
