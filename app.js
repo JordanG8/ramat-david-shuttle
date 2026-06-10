@@ -811,7 +811,7 @@ function renderRouteContent(view) {
     html += renderRouteCard(fromTrain, { splitReinforcement: true, stopKeyword: "רכבת כפר יהושע" });
   } else if (view === "tzomet") {
     const tzomet = DATA.bus_routes[3];
-    html += renderRouteCard(tzomet, { hideEvening: true, stopKeyword: "צומת רמת דוד" });
+    html += renderRouteCard(tzomet, { hideEvening: true, splitReinforcement: true, stopKeyword: "צומת רמת דוד" });
   } else if (view === "internal") {
     const internal = DATA.bus_routes[2];
     if (internal.note) {
@@ -970,6 +970,60 @@ function getHadaTrips() {
     groups[key].sort((a, b) => parseTime(a.time) - parseTime(b.time));
   }
   return groups;
+}
+
+// ─── Sync destination tabs (train / צומת) from the line schedules ───
+// The רכבת and צומת tabs are DERIVED from OLD_ROUTES so they can never drift
+// out of sync with the קו 1–5 tables. (חד"א is already derived via getHadaTrips.)
+// A time is marked as reinforcement ("תגבור") only if it appears *exclusively*
+// on a reinforcement line (קו 5) and on no regular line.
+function deriveDeparturesByStops(predicate) {
+  const toMin = (t) => {
+    const m = t.match(/^(\d{1,2}):(\d{2})$/);
+    return m ? parseInt(m[1]) * 60 + parseInt(m[2]) : 9999;
+  };
+  const regular = new Set();
+  const reinforce = new Set();
+  OLD_ROUTES.forEach((route) => {
+    const isReinforce = /תגבור/.test(route.name);
+    route.schedule.forEach((entry) => {
+      if (entry.type !== "נסיעה" || !entry.stops || !entry.stops.length) return;
+      if (!/^\d{1,2}:\d{2}$/.test(entry.time)) return;
+      if (!predicate(entry.stops)) return;
+      (isReinforce ? reinforce : regular).add(entry.time);
+    });
+  });
+  const times = Array.from(new Set([...regular, ...reinforce]));
+  times.sort((a, b) => toMin(a) - toMin(b));
+  return times.map((time) =>
+    regular.has(time) ? { time } : { time, note: "תגבור- רק בימי ראשון וחמישי" },
+  );
+}
+
+function syncDestinationsFromLines() {
+  const routes = DATA && DATA.bus_routes;
+  if (!Array.isArray(routes)) return;
+  const TRAIN = "רכבת כפר יהושע";
+  const TZOMET = "צומת רמת דוד";
+
+  if (routes[0]) {
+    routes[0].departure_times = deriveDeparturesByStops((stops) =>
+      stops[stops.length - 1].includes(TRAIN),
+    );
+    delete routes[0].departure_times_str;
+  }
+  if (routes[1]) {
+    routes[1].departure_times = deriveDeparturesByStops((stops) =>
+      stops[0].includes(TRAIN),
+    );
+    delete routes[1].departure_times_str;
+  }
+  if (routes[3]) {
+    routes[3].departure_times = deriveDeparturesByStops((stops) =>
+      stops.some((s) => s.includes(TZOMET)),
+    );
+    delete routes[3].departure_times_str;
+  }
 }
 
 function groupHadaTripsByStops(trips) {
@@ -1272,6 +1326,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.body.appendChild(toast);
     setTimeout(() => toast.remove(), 5000);
   }
+  // Keep the destination tabs (רכבת / צומת) in sync with the line tables
+  syncDestinationsFromLines();
   // Set the hash to reflect the initial view
   if (!window.location.hash) {
     history.replaceState(null, "", "#home");
