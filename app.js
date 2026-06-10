@@ -1026,23 +1026,38 @@ function syncDestinationsFromLines() {
   }
 }
 
-function groupHadaTripsByStops(trips) {
-  const map = new Map();
-  trips.forEach((trip) => {
-    const sig = trip.stops.join("|");
-    if (!map.has(sig)) {
-      map.set(sig, { stops: trip.stops, times: [] });
-    }
-    map.get(sig).times.push(trip.time);
-  });
+// Merge an area's חד"א trips into at most two cards — one per direction
+// (אל חד"א / מחד"א) — so each time appears once and near-identical line
+// variants collapse into a single readable card per direction.
+function buildHadaCards(maslulLabel, trips) {
+  if (!trips || trips.length === 0) return [];
   const parseTime = (t) => {
     const m = t.match(/^(\d{1,2}):(\d{2})$/);
     return m ? parseInt(m[1]) * 60 + parseInt(m[2]) : 9999;
   };
-  const result = Array.from(map.values());
-  result.forEach((r) => r.times.sort((a, b) => parseTime(a) - parseTime(b)));
-  result.sort((a, b) => parseTime(a.times[0]) - parseTime(b.times[0]));
-  return result;
+  const dirs = { to: [], from: [] };
+  trips.forEach((t) => {
+    // first stop is חד"א → departing (includes loops); else it arrives there
+    (isHadaStop(t.stops[0]) ? dirs.from : dirs.to).push(t);
+  });
+  const active = [
+    ["to", 'אל חד"א'],
+    ["from", 'מחד"א'],
+  ].filter(([k]) => dirs[k].length);
+
+  return active.map(([k, dirLabel]) => {
+    const bucket = dirs[k];
+    const times = Array.from(new Set(bucket.map((t) => t.time))).sort(
+      (a, b) => parseTime(a) - parseTime(b),
+    );
+    // representative path = the most complete (longest) variant in the bucket
+    const stops = bucket.reduce(
+      (best, t) => (t.stops.length > best.length ? t.stops : best),
+      [],
+    );
+    const title = active.length > 1 ? `${maslulLabel} · ${dirLabel}` : maslulLabel;
+    return { title, times, stops };
+  });
 }
 
 function renderHadaRouteCard(title, times, stops) {
@@ -1064,29 +1079,17 @@ function renderHadaRouteCard(title, times, stops) {
     </div>`;
 }
 
-function renderHadaSection(sectionLabel, trips) {
-  if (!trips || trips.length === 0) return "";
-  const routes = groupHadaTripsByStops(trips);
-
-  return routes
-    .map((route) => {
-      const first = route.stops[0];
-      const last = route.stops[route.stops.length - 1];
-      const title = first === last ? sectionLabel : `${first} - ${last}`;
-      return renderHadaRouteCard(title, route.times, route.stops);
-    })
-    .join("");
-}
-
 function renderHadaContent() {
   const groups = getHadaTrips();
-  let html = "";
+  const cards = [
+    ...buildHadaCards("מסלול א׳", groups["109"]),
+    ...buildHadaCards("מסלול ב׳", groups["105"]),
+    ...buildHadaCards("מסלול תחזוקה", groups.maintenance),
+  ];
 
-  html += renderHadaSection('חדר אוכל - מסלול א׳', groups["109"]);
-  html += renderHadaSection('חדר אוכל - מסלול ב׳', groups["105"]);
-  html += renderHadaSection('חד"א - טייסת תחזוקה', groups.maintenance);
-
-  return html;
+  return cards
+    .map((c) => renderHadaRouteCard(c.title, c.times, c.stops))
+    .join("");
 }
 
 // ─── On-Call Shuttle ───
