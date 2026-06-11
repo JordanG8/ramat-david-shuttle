@@ -1026,9 +1026,12 @@ function syncDestinationsFromLines() {
   }
 
   // Internal work-area dispersal: line trips that depart from רחבת היסעים
-  // and stop at the area. Trips that originate elsewhere (רכבת, חד"א, צומת)
-  // are excluded — their time is the departure from that origin, not from
-  // the רחבה, so showing them here is misleading.
+  // and stop at the area. Trips departing צומת רמת דוד also count — they
+  // reach the רחבה minutes later and continue into the base (this is how
+  // the 105 loop gets its morning runs from קו 3/קו 4). Trips that
+  // originate elsewhere (רכבת, חד"א) are excluded — their time is the
+  // departure from that origin, not from the רחבה, so showing them here
+  // is misleading.
   const internal = routes[2];
   if (internal && Array.isArray(internal.sub_routes)) {
     internal.sub_routes.forEach((sub) => {
@@ -1040,7 +1043,8 @@ function syncDestinationsFromLines() {
       if (!kw) return;
       sub.departure_times = deriveDeparturesByStops(
         (stops) =>
-          stops[0].includes("רחבת היסעים") &&
+          (stops[0].includes("רחבת היסעים") ||
+            stops[0].includes("צומת רמת דוד")) &&
           stops.some((s) => s.includes(kw)),
       );
       delete sub.departure_times_str;
@@ -1059,8 +1063,13 @@ function buildHadaCards(maslulLabel, trips) {
   };
   const dirs = { to: [], from: [] };
   trips.forEach((t) => {
-    // first stop is חד"א → departing (includes loops); else it arrives there
-    (isHadaStop(t.stops[0]) ? dirs.from : dirs.to).push(t);
+    const fromHada = isHadaStop(t.stops[0]);
+    const toHada = isHadaStop(t.stops[t.stops.length - 1]);
+    // Loops (חד"א→...→חד"א) serve both directions: they return the first
+    // round's diners and pick up the next round (סבב ב) on the way back,
+    // so they appear under both אל חד"א and מחד"א.
+    if (fromHada) dirs.from.push(t);
+    if (toHada) dirs.to.push(t);
   });
   const active = [
     ["to", 'אל חד"א'],
@@ -1072,8 +1081,14 @@ function buildHadaCards(maslulLabel, trips) {
     const times = Array.from(new Set(bucket.map((t) => t.time))).sort(
       (a, b) => parseTime(a) - parseTime(b),
     );
-    // representative path = the most complete (longest) variant in the bucket
-    const stops = bucket.reduce(
+    // representative path = the most complete (longest) variant in the
+    // bucket; for אל חד"א prefer a variant that actually starts outside
+    // חד"א over a loop, so the shown path matches the direction
+    const pool =
+      k === "to" && bucket.some((t) => !isHadaStop(t.stops[0]))
+        ? bucket.filter((t) => !isHadaStop(t.stops[0]))
+        : bucket;
+    const stops = pool.reduce(
       (best, t) => (t.stops.length > best.length ? t.stops : best),
       [],
     );
