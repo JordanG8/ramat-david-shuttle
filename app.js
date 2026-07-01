@@ -1152,7 +1152,7 @@ function renderOnCallContent() {
             <div class="evening-note">${esc(tzomet.evening.break)}</div>
           </div>
         </div>
-        <div class="route-note">${infoSVG}   הזמנת שאטל - מבצעים/הטסה בתיאום מול מוצב מנהלה</div>
+        <div class="route-note">${infoSVG}   הזמנות שאטל בשעות 18:00 עד 22:00 יבוצעו דרך מבצעים / הטסה מול מוצב מנהלה</div>
       </div>
     </div>`;
   }
