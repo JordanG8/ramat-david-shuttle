@@ -865,6 +865,21 @@ import "./src/styles/admin.css";
     return si >= 0 ? editRoutes[ri].sub_routes[si] : editRoutes[ri];
   }
 
+  function timeToMinutes(t) {
+    var m = /(\d{1,2}):(\d{2})/.exec(t || "");
+    return m ? +m[1] * 60 + +m[2] : 0;
+  }
+
+  // Keep a route's departure times in ascending chronological order so a newly
+  // set time (e.g. 16:00) automatically lands right after 15:59.
+  function sortRouteTimes(ri) {
+    var times = editRoutes[ri] && editRoutes[ri].departure_times;
+    if (!times) return;
+    times.sort(function (a, b) {
+      return timeToMinutes(a.time) - timeToMinutes(b.time);
+    });
+  }
+
   // ─── Bind delegated events ONCE on the routes container ───
   var routesDelegated = false;
   var dragState = null;
@@ -927,6 +942,19 @@ import "./src/styles/admin.css";
       markDirty("routes", ri);
     });
 
+    // When a time input is committed (blur), re-sort the route's times so they
+    // stay in chronological order automatically.
+    c.addEventListener("change", function (e) {
+      var el = e.target;
+      if (el.getAttribute("data-f") !== "tv") return;
+      var ri = +el.getAttribute("data-r");
+      if (!editRoutes[ri] || !editRoutes[ri].departure_times) return;
+      sortRouteTimes(ri);
+      markDirty("routes", ri);
+      renderRoutesTab();
+      openRouteCard(ri);
+    });
+
     c.addEventListener("click", function (e) {
       var btn = e.target.closest("[data-act]");
       if (!btn) return;
@@ -979,6 +1007,7 @@ import "./src/styles/admin.css";
         if (!editRoutes[ri].departure_times)
           editRoutes[ri].departure_times = [];
         editRoutes[ri].departure_times.push({ time: "08:00" });
+        sortRouteTimes(ri);
         markDirty("routes", ri);
         renderRoutesTab();
         openRouteCard(ri);
@@ -1130,6 +1159,8 @@ import "./src/styles/admin.css";
     return "trip";
   }
 
+  var schedulesDelegated = false;
+
   function renderSchedulesTab() {
     var c = $("schedules-list");
     if (!editSchedules.length) {
@@ -1264,6 +1295,7 @@ import "./src/styles/admin.css";
   }
 
   function bindSchedulesEvents(c) {
+    // Header toggles are re-bound each render (elements are recreated).
     c.querySelectorAll(".route-editor-header").forEach(function (h) {
       h.addEventListener("click", function () {
         h.parentElement.classList.toggle("open");
@@ -1275,6 +1307,12 @@ import "./src/styles/admin.css";
         h.parentElement.classList.toggle("open");
       });
     });
+
+    // Container-level delegated listeners must bind ONCE. The container element
+    // persists across renders, so re-binding here would stack handlers and make
+    // a single click fire multiple times (duplicating entries).
+    if (schedulesDelegated) return;
+    schedulesDelegated = true;
 
     c.addEventListener("input", function (e) {
       var el = e.target,
