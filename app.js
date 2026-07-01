@@ -1131,12 +1131,14 @@ function renderHadaContent() {
 
 // ─── On-Call Shuttle ───
 function renderOnCallContent() {
-  let html = "";
-  const tzomet = DATA.bus_routes[3];
+  // Find whichever route carries an evening block rather than assuming a fixed
+  // index, so the tab still renders if the routes are reordered/edited.
+  const eveningRoute = (DATA.bus_routes || []).find((r) => r && r.evening);
+  const evening = eveningRoute ? eveningRoute.evening : null;
+  const eveningTime = evening && evening.time ? evening.time : "18:00-22:00";
+  const eveningBreak = evening ? evening.break : "";
 
-  // Evening hours from tzomet route
-  if (tzomet.evening) {
-    html += `<div class="route-card">
+  return `<div class="route-card">
       <div class="route-card-header">
         <div class="route-card-title">שאטל לפי קריאה - ערב</div>
       </div>
@@ -1147,17 +1149,14 @@ function renderOnCallContent() {
           </div>
           <div class="evening-info">
             <div class="dep-chip dep-chip--evening">
-              <span class="dep-chip-time">${esc(tzomet.evening.time)}</span>
+              <span class="dep-chip-time">${esc(eveningTime)}</span>
             </div>
-            <div class="evening-note">${esc(tzomet.evening.break)}</div>
+            ${eveningBreak ? `<div class="evening-note">${esc(eveningBreak)}</div>` : ""}
           </div>
         </div>
         <div class="route-note">${infoSVG}   הזמנות שאטל בשעות 18:00 עד 22:00 יבוצעו דרך מבצעים / הטסה מול מוצב מנהלה</div>
       </div>
     </div>`;
-  }
-
-  return html;
 }
 
 // ─── Old Routes ───
