@@ -660,8 +660,6 @@ import "./src/styles/admin.css";
           '<span class="route-meta-badge">' + badge + "</span>" +
           "</div>" +
           '<div class="route-header-actions">' +
-          '<button class="route-action-btn" data-act="dup-route" data-r="' + ri + '" title="שכפל קו">' +
-          '<span class="material-symbols-rounded">content_copy</span></button>' +
           chevronSvg +
           "</div></div>" +
           '<div class="route-editor-body">' +
@@ -1036,13 +1034,6 @@ import "./src/styles/admin.css";
         markDirty("routes", ri);
         renderRoutesTab();
         openRouteCard(ri);
-      }
-      if (act === "dup-route") {
-        editRoutes.splice(ri + 1, 0, clone(editRoutes[ri]));
-        editRoutes[ri + 1].name += " (עותק)";
-        markDirty("routes", ri + 1);
-        renderRoutesTab();
-        openRouteCard(ri + 1);
       }
       if (act === "toggle-csv") {
         var key = btn.getAttribute("data-csv-key") || (ri + "-" + si);

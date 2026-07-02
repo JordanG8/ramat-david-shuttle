@@ -839,22 +839,6 @@ select.form-control { cursor: pointer; }
   flex-shrink: 0;
 }
 
-.route-action-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: var(--adm-muted);
-  padding: 4px;
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: color .15s, background .15s;
-  flex-shrink: 0;
-}
-.route-action-btn .material-symbols-rounded { font-size: 16px; }
-.route-action-btn:hover { color: var(--adm-navy); background: rgba(0,0,0,.06); }
-
 /* ─── Per-Route Dirty Indicator ─── */
 .route-editor-card.route-dirty .route-badge {
   box-shadow: 0 0 0 2.5px #f59e0b;
@@ -975,7 +959,6 @@ select.form-control { cursor: pointer; }
   .route-editor-body { padding: 14px; gap: 14px; }
   .route-badge { font-size: 10px; padding: 2px 6px; }
   .route-meta-badge { font-size: 10px; }
-  .route-action-btn .material-symbols-rounded { font-size: 15px; }
 
   .tab-header-actions { gap: 6px; }
   .btn-ghost { font-size: 11px; padding: 5px 8px; }
