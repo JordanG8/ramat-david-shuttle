@@ -3,7 +3,11 @@
 // ═══════════════════════════════════════════
 // Depends on app.js being loaded first (DATA, OLD_ROUTES globals)
 
+import { inject } from '@vercel/analytics';
 import "./src/styles/admin.css";
+
+// Initialize Vercel Analytics
+inject();
 
 (function AdminDashboard() {
   "use strict";
