@@ -745,7 +745,7 @@ function renderNavButtons() {
   let html = `<div class="nav-card">`;
   html += `<div class="nav-card-cta">
     <span class="material-symbols-rounded nav-card-title-icon">explore</span>
-    <h2 class="nav-card-title">לאן את.ה צריך להגיע?</h2>
+    <h2 class="nav-card-title">לאן את.ה צריכ.ה להגיע</h2>
   </div>`;
   html += `<div class="nav-buttons">`;
   buttons.forEach((btn) => {
