@@ -2,11 +2,15 @@
 // RAMAT DAVID SHUTTLE — APP
 // ═══════════════════════════════════════════
 
+import { inject } from '@vercel/analytics';
 import "./src/styles/styles.css";
 import {
   DATA as fallbackDATA,
   OLD_ROUTES as fallbackOLD_ROUTES,
 } from "./src/data/fallbackData.js";
+
+// Initialize Vercel Analytics
+inject();
 
 let DATA = JSON.parse(JSON.stringify(fallbackDATA));
 let OLD_ROUTES = JSON.parse(JSON.stringify(fallbackOLD_ROUTES));
@@ -1441,7 +1445,7 @@ function showInstallPrompt() {
       <div class="install-headline">
         <span class="install-badge">חדש!</span>
         <h2 id="install-title" class="install-title">שמרו את האפליקציה במסך הבית</h2>
-        <p class="install-subtitle">גישה מהירה בלחיצה אחת — בלי לפתוח דפדפן, בלי לחפש קישורים. ממש כמו אפליקציה אמיתית.</p>
+        <p class="install-subtitle">גישה מהירה בלחיצה אחת — בלי לפתוח דפדפן, בלי לחפש קישורים. מ��ש כמו אפליקציה אמיתית.</p>
       </div>
       <div class="install-body" data-install-body></div>
       <div class="install-actions">
