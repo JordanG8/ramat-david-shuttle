@@ -100,7 +100,7 @@
     <div class="cb-items">${e}</div>
   </div>`}function it(t){const e='<svg class="route-arrow" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>';if(t.includes(" - ")){const s=t.split(" - ");return`<span class="route-from">${l(s[0])}</span>${e}<span class="route-to">${l(s[1])}</span>`}return l(t)}function Lt(){const t=[{icon:z,label:"רכבת כפר יהושע",sub:"",view:"train",btnClass:"nav-btn--train"},{icon:'<span class="material-symbols-rounded">alt_route</span>',label:"צומת רמת דוד - רחבת היסעים",sub:"שאטל מהצומת לבסיס",view:"tzomet",btnClass:"nav-btn--tzomet"},{icon:'<span class="material-symbols-rounded">directions_bus</span>',label:"פיזור למקומות עבודה",sub:"הסעות פנים בסיס",view:"internal",btnClass:"nav-btn--internal"},{icon:'<span class="material-symbols-rounded">restaurant</span>',label:'חד"א',sub:"נסיעות לחדר האוכל",view:"hada",btnClass:"nav-btn--hada"},{icon:'<span class="material-symbols-rounded">call</span>',label:"שאטל לפי קריאה",sub:"הזמנת נסיעה",view:"oncall",btnClass:"nav-btn--oncall"},{icon:'<span class="material-symbols-rounded">map</span>',label:"מקרא תחנות ומידע",sub:"מפה ומידע כללי",view:"info",btnClass:"nav-btn--info"}];let e='<div class="nav-card">';return e+=`<div class="nav-card-cta">
     <span class="material-symbols-rounded nav-card-title-icon">explore</span>
-    <h2 class="nav-card-title">לאן את.ה צריך להגיע?</h2>
+    <h2 class="nav-card-title">לאן את.ה צריכ.ה להגיע</h2>
   </div>`,e+='<div class="nav-buttons">',t.forEach(s=>{e+=`<div class="nav-btn ${s.btnClass}" onclick="navigateTo('${s.view}')">
       <div class="nav-btn-icon-wrap">
         <span class="nav-btn-icon">${s.icon}</span>
