@@ -138,6 +138,7 @@ inject();
       editRoutes = clone(serverData.bus_routes);
       DATA.bus_routes = clone(serverData.bus_routes);
     }
+    editRoutes.forEach(normalizeRouteTimes);
     if (serverData && serverData.old_routes) {
       editSchedules = clone(serverData.old_routes);
       if (typeof OLD_ROUTES !== "undefined")
@@ -628,9 +629,7 @@ inject();
         } else {
           if (route.stops) body += buildStopsHtml(ri, -1, route.stops);
           if (route.departure_times)
-            body += buildTimesHtml(ri, route.departure_times);
-          else if (route.departure_times_str !== undefined)
-            body += buildTimesStrHtml(ri, -1, route.departure_times_str);
+            body += buildTimesHtml(ri, -1, route.departure_times);
           if (route.evening) {
             body +=
               '<div class="route-subsection mt-12"><div class="route-subsection-header">לוח ערב</div><div class="route-subsection-body">' +
@@ -695,7 +694,7 @@ inject();
       '" data-s="' +
       si +
       '"></div></div>' +
-      buildTimesStrHtml(ri, si, sr.departure_times_str || "") +
+      buildTimesHtml(ri, si, sr.departure_times || []) +
       buildStopsHtml(ri, si, sr.stops || []) +
       "</div></div>"
     );
@@ -783,14 +782,15 @@ inject();
     );
   }
 
-  function buildTimesHtml(ri, times) {
-    var csvKey = ri + "-times";
+  function buildTimesHtml(ri, si, times) {
+    var sp = si >= 0 ? ' data-s="' + si + '"' : "";
+    var csvKey = (si >= 0 ? ri + "-" + si : ri) + "-times";
     var isCsv = csvModeRoutes.has(csvKey);
 
     var toggleIcon = isCsv ? "list" : "edit_note";
     var toggleTitle = isCsv ? "מצב רשימה" : "עריכה מהירה";
     var toggleBtn = '<button class="csv-toggle-btn" data-act="toggle-csv" data-r="' +
-      ri + '" data-csv-key="' + csvKey + '" title="' + toggleTitle + '">' +
+      ri + '"' + sp + ' data-csv-key="' + csvKey + '" title="' + toggleTitle + '">' +
       '<span class="material-symbols-rounded">' + toggleIcon + '</span></button>';
 
     if (isCsv) {
@@ -801,8 +801,8 @@ inject();
         '<div class="route-subsection mt-8"><div class="route-subsection-header"><span>שעות יציאה (' +
         times.length + ')</span><div class="subsection-header-actions">' + toggleBtn + '</div></div>' +
         '<div class="route-subsection-body">' +
-        '<textarea class="form-control csv-textarea" data-f="csv-times" data-r="' + ri +
-        '" style="direction:ltr;text-align:left" placeholder="שעה אחת בכל שורה...\n07:20\n08:00 | תגבור" rows="' +
+        '<textarea class="form-control csv-textarea" data-f="csv-times" data-r="' + ri + '"' + sp +
+        ' style="direction:ltr;text-align:left" placeholder="שעה אחת בכל שורה...\n07:20\n08:00 | תגבור" rows="' +
         Math.max(4, times.length + 1) + '">' + esc(csvText) + '</textarea></div></div>'
       );
     }
@@ -818,17 +818,23 @@ inject();
           esc(t.time) +
           '" data-f="tv" data-r="' +
           ri +
-          '" data-t="' +
+          '"' +
+          sp +
+          ' data-t="' +
           ti +
           '">' +
           '<button class="time-chip-reinforce-toggle" data-act="tog-rein" data-r="' +
           ri +
-          '" data-t="' +
+          '"' +
+          sp +
+          ' data-t="' +
           ti +
           '" title="תגבור">ת</button>' +
           '<button class="time-chip-del" data-act="del-tm" data-r="' +
           ri +
-          '" data-t="' +
+          '"' +
+          sp +
+          ' data-t="' +
           ti +
           '">✕</button>' +
           "</div>"
@@ -841,25 +847,12 @@ inject();
       ')</span><div class="subsection-header-actions">' +
       '<button class="btn btn-secondary btn-sm" data-act="add-tm" data-r="' +
       ri +
-      '">+ שעה</button>' + toggleBtn + "</div></div>" +
+      '"' +
+      sp +
+      ">+ שעה</button>" + toggleBtn + "</div></div>" +
       '<div class="route-subsection-body"><div class="times-editor-list">' +
       chips +
       "</div></div></div>"
-    );
-  }
-
-  function buildTimesStrHtml(ri, si, str) {
-    var sp = si >= 0 ? ' data-s="' + si + '"' : "";
-    return (
-      '<div class="route-subsection mt-8"><div class="route-subsection-header">שעות יציאה (טקסט)</div>' +
-      '<div class="route-subsection-body"><div class="form-group"><label>שעות מופרדות ב-</label>' +
-      '<input class="form-control" value="' +
-      esc(str) +
-      '" data-f="tstr" data-r="' +
-      ri +
-      '"' +
-      sp +
-      ' style="direction:ltr;text-align:left" placeholder="7:20-8:20-09:00..."></div></div></div>'
     );
   }
 
@@ -872,10 +865,36 @@ inject();
     return m ? +m[1] * 60 + +m[2] : 0;
   }
 
+  function padTime(t) {
+    var m = /^(\d{1,2}):(\d{2})$/.exec(t);
+    if (!m) return t;
+    return (m[1].length < 2 ? "0" + m[1] : m[1]) + ":" + m[2];
+  }
+
+  // Legacy routes stored their times as a dash-separated string
+  // (departure_times_str). Convert those to a departure_times array so every
+  // line — including the 105/109 sub-routes — gets the same chip editor.
+  function normalizeRouteTimes(route) {
+    if (route.departure_times_str !== undefined && !route.departure_times) {
+      route.departure_times = String(route.departure_times_str)
+        .split("-")
+        .map(function (t) {
+          return t.trim();
+        })
+        .filter(Boolean)
+        .map(function (t) {
+          return { time: padTime(t) };
+        });
+      delete route.departure_times_str;
+    }
+    (route.sub_routes || []).forEach(normalizeRouteTimes);
+  }
+
   // Keep a route's departure times in ascending chronological order so a newly
   // set time (e.g. 16:00) automatically lands right after 15:59.
-  function sortRouteTimes(ri) {
-    var times = editRoutes[ri] && editRoutes[ri].departure_times;
+  function sortRouteTimes(ri, si) {
+    var ref = routeRef(ri, si);
+    var times = ref && ref.departure_times;
     if (!times) return;
     times.sort(function (a, b) {
       return timeToMinutes(a.time) - timeToMinutes(b.time);
@@ -920,13 +939,10 @@ inject();
         var ref = routeRef(ri, si);
         if (ref.stops) ref.stops[+el.getAttribute("data-i")] = el.value;
       }
-      if (f === "tstr") {
-        routeRef(ri, si).departure_times_str = el.value;
-      }
       if (f === "tv") {
         var ti = +el.getAttribute("data-t");
-        if (editRoutes[ri].departure_times)
-          editRoutes[ri].departure_times[ti].time = el.value;
+        var tref = routeRef(ri, si);
+        if (tref.departure_times) tref.departure_times[ti].time = el.value;
       }
       if (f === "csv-stops") {
         var ref = routeRef(ri, si);
@@ -934,9 +950,9 @@ inject();
       }
       if (f === "csv-times") {
         var lines = el.value.split("\n").filter(function (l) { return l.trim(); });
-        editRoutes[ri].departure_times = lines.map(function (line) {
+        routeRef(ri, si).departure_times = lines.map(function (line) {
           var parts = line.split("|");
-          var t = { time: parts[0].trim() };
+          var t = { time: padTime(parts[0].trim()) };
           if (parts[1] && parts[1].trim()) t.note = parts[1].trim();
           return t;
         });
@@ -950,8 +966,11 @@ inject();
       var el = e.target;
       if (el.getAttribute("data-f") !== "tv") return;
       var ri = +el.getAttribute("data-r");
-      if (!editRoutes[ri] || !editRoutes[ri].departure_times) return;
-      sortRouteTimes(ri);
+      var si = el.getAttribute("data-s");
+      si = si != null ? +si : -1;
+      var ref = editRoutes[ri] && routeRef(ri, si);
+      if (!ref || !ref.departure_times) return;
+      sortRouteTimes(ri, si);
       markDirty("routes", ri);
       renderRoutesTab();
       openRouteCard(ri);
@@ -1006,22 +1025,22 @@ inject();
         }
       }
       if (act === "add-tm") {
-        if (!editRoutes[ri].departure_times)
-          editRoutes[ri].departure_times = [];
-        editRoutes[ri].departure_times.push({ time: "08:00" });
-        sortRouteTimes(ri);
+        var tref = routeRef(ri, si);
+        if (!tref.departure_times) tref.departure_times = [];
+        tref.departure_times.push({ time: "08:00" });
+        sortRouteTimes(ri, si);
         markDirty("routes", ri);
         renderRoutesTab();
         openRouteCard(ri);
       }
       if (act === "del-tm" && ti >= 0) {
-        editRoutes[ri].departure_times.splice(ti, 1);
+        routeRef(ri, si).departure_times.splice(ti, 1);
         markDirty("routes", ri);
         renderRoutesTab();
         openRouteCard(ri);
       }
       if (act === "tog-rein" && ti >= 0) {
-        var dt = editRoutes[ri].departure_times[ti];
+        var dt = routeRef(ri, si).departure_times[ti];
         if (dt.note && dt.note.indexOf("תגבור") >= 0) delete dt.note;
         else dt.note = "תגבור- רק בימי ראשון וחמישי";
         markDirty("routes", ri);
@@ -1032,7 +1051,7 @@ inject();
         if (!editRoutes[ri].sub_routes) editRoutes[ri].sub_routes = [];
         editRoutes[ri].sub_routes.push({
           name: "תת-מסלול חדש",
-          departure_times_str: "",
+          departure_times: [],
           stops: [],
         });
         markDirty("routes", ri);
@@ -1509,6 +1528,7 @@ inject();
           var d = JSON.parse(e.target.result);
           if (d.units) editUnits = d.units;
           if (d.bus_routes) editRoutes = d.bus_routes;
+          editRoutes.forEach(normalizeRouteTimes);
           if (d.old_routes) editSchedules = d.old_routes;
           await persistAll();
           renderUnitsTab();
