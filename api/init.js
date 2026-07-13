@@ -3,11 +3,21 @@ import bcrypt from "bcryptjs";
 
 export default async function handler(req, res) {
   try {
-    // Create the table if it doesn't exist
+    // Create the tables if they don't exist
     await sql`
       CREATE TABLE IF NOT EXISTS app_settings (
         key VARCHAR(255) PRIMARY KEY,
         value TEXT NOT NULL
+      );
+    `;
+
+    await sql`
+      CREATE TABLE IF NOT EXISTS app_data_versions (
+        id SERIAL PRIMARY KEY,
+        data TEXT NOT NULL,
+        label TEXT,
+        summary TEXT,
+        saved_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       );
     `;
 

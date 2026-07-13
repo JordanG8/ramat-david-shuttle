@@ -1,6 +1,7 @@
 import { sql } from "@vercel/postgres";
 import jwt from "jsonwebtoken";
 import { parse } from "cookie";
+import { recordVersion } from "./history.js";
 
 const JWT_SECRET = process.env.JWT_SECRET || "fallback_secret_for_dev";
 
@@ -26,7 +27,7 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: "Internal server error" });
     }
   } else if (req.method === "POST") {
-    const { data } = req.body;
+    const { data, label } = req.body;
 
     if (!data) {
       return res.status(400).json({ error: "Data is required" });
@@ -54,6 +55,14 @@ export default async function handler(req, res) {
         VALUES ('app_data', ${dataString})
         ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
       `;
+
+      // Every publish becomes a restorable version, and supersedes the draft.
+      try {
+        await recordVersion(dataString, label || "פרסום מלוח הבקרה");
+        await sql`DELETE FROM app_settings WHERE key = 'app_draft'`;
+      } catch (histErr) {
+        console.error("Error recording version:", histErr);
+      }
 
       return res.status(200).json({ success: true });
     } catch (error) {
