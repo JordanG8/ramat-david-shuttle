@@ -1029,16 +1029,24 @@ function syncDestinationsFromLines() {
     delete routes[3].departure_times_str;
   }
 
-  // Internal work-area dispersal: line trips that depart from רחבת היסעים
-  // and stop at the area. Trips departing צומת רמת דוד also count — they
-  // reach the רחבה minutes later and continue into the base (this is how
-  // the 105 loop gets its morning runs from קו 3/קו 4). Trips that
-  // originate elsewhere (רכבת, חד"א) are excluded — their time is the
-  // departure from that origin, not from the רחבה, so showing them here
-  // is misleading.
+  // Internal work-area dispersal (105 / 109): the admin panel is the source
+  // of truth. Times saved there (departure_times_str or departure_times) are
+  // kept as-is so logistics can edit both lines directly. Only when a
+  // sub-route has no admin-set times do we fall back to deriving them from
+  // the קו 1–5 line tables: trips that depart from רחבת היסעים and stop at
+  // the area. Trips departing צומת רמת דוד also count — they reach the רחבה
+  // minutes later and continue into the base (this is how the 105 loop gets
+  // its morning runs from קו 3/קו 4). Trips that originate elsewhere
+  // (רכבת, חד"א) are excluded — their time is the departure from that
+  // origin, not from the רחבה, so showing them here is misleading.
   const internal = routes[2];
   if (internal && Array.isArray(internal.sub_routes)) {
     internal.sub_routes.forEach((sub) => {
+      const hasAdminTimes =
+        (typeof sub.departure_times_str === "string" &&
+          sub.departure_times_str.trim() !== "") ||
+        (Array.isArray(sub.departure_times) && sub.departure_times.length > 0);
+      if (hasAdminTimes) return;
       const kw = /109|מסלול א/.test(sub.name)
         ? "גף טיסה 109"
         : /105|מסלול ב/.test(sub.name)
