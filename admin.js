@@ -14,9 +14,6 @@ inject();
 
   /* ─── Constants ─── */
   var STORAGE_KEY = "shuttle_admin_data";
-  var PASSWORD_KEY = "shuttle_admin_pwd";
-  var SESSION_KEY = "shuttle_admin_session";
-  var DEFAULT_PWD = "admin2024!";
 
   /* ─── Helpers ─── */
   function clone(o) {
@@ -34,6 +31,13 @@ inject();
     return document.getElementById(id);
   }
 
+  function timeStr() {
+    return new Date().toLocaleTimeString("he-IL", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }
+
   /* ─── Working copies (edits happen here, saved on demand) ─── */
   var editUnits = clone(DATA.units);
   var editRoutes = clone(DATA.bus_routes);
@@ -47,6 +51,14 @@ inject();
     dirtySchedules = false;
   var dirtyRouteIndices = new Set();
   var csvModeRoutes = new Set();
+
+  /* ─── Per-card UI state for the routes editor (survives re-renders) ─── */
+  var routeUI = {};
+
+  function getRouteUI(ri) {
+    if (!routeUI[ri]) routeUI[ri] = { open: false, tab: null, subTab: {} };
+    return routeUI[ri];
+  }
 
   // ═══════════════════════════════════════════
   // AUTHENTICATION
@@ -138,21 +150,36 @@ inject();
       editRoutes = clone(serverData.bus_routes);
       DATA.bus_routes = clone(serverData.bus_routes);
     }
-    editRoutes.forEach(normalizeRouteTimes);
     if (serverData && serverData.old_routes) {
       editSchedules = clone(serverData.old_routes);
       if (typeof OLD_ROUTES !== "undefined")
         OLD_ROUTES = clone(serverData.old_routes);
     }
+    editRoutes.forEach(normalizeRouteTimes);
 
     initTabs();
     initGlobalSave();
+    initHistoryModal();
     renderUnitsTab();
     renderRoutesTab();
     renderSchedulesTab();
     renderDataInfo();
     bindSettingsEvents();
     updateSaveStatus();
+    checkForDraft();
+  }
+
+  // Replace the working copies with an external payload (draft, restored
+  // version, imported file) and repaint every tab.
+  function applyDataInto(d) {
+    if (d.units) editUnits = clone(d.units);
+    if (d.bus_routes) editRoutes = clone(d.bus_routes);
+    if (d.old_routes) editSchedules = clone(d.old_routes);
+    editRoutes.forEach(normalizeRouteTimes);
+    renderUnitsTab();
+    renderRoutesTab();
+    renderSchedulesTab();
+    renderDataInfo();
   }
 
   // ═══════════════════════════════════════════
@@ -175,23 +202,15 @@ inject();
     });
   }
 
-  // ─── Global Save Button ───
+  // ─── Global Publish Button ───
   function initGlobalSave() {
-    $("global-save-btn").addEventListener("click", async function () {
-      var active = document.querySelector(".tab-panel.active");
-      if (!active) return;
-      var id = active.id;
-      if (id === "tab-units" && dirtyUnits) {
-        await persistUnits();
-        toast("יחידות ותחנות נשמרו בהצלחה!", "success");
-      } else if (id === "tab-routes" && dirtyRoutes) {
-        await persistRoutes();
-        toast("קווי שאטל נשמרו בהצלחה!", "success");
-      } else if (id === "tab-schedules" && dirtySchedules) {
-        await persistSchedules();
-        toast("לוחות זמנים נשמרו בהצלחה!", "success");
-      }
-      renderDataInfo();
+    $("global-save-btn").addEventListener("click", function () {
+      var parts = [];
+      if (dirtyUnits) parts.push("יחידות ותחנות");
+      if (dirtyRoutes) parts.push("קווי שאטל");
+      if (dirtySchedules) parts.push("לוחות זמנים");
+      if (!parts.length) return;
+      publishAll("עדכון: " + parts.join(", "));
     });
     updateSaveStatus();
   }
@@ -233,10 +252,17 @@ inject();
     if (w === "units") dirtyUnits = true;
     if (w === "routes") {
       dirtyRoutes = true;
-      if (ri != null) dirtyRouteIndices.add(ri);
+      if (ri != null) {
+        dirtyRouteIndices.add(ri);
+        var card = document.querySelector(
+          '#routes-list .route-editor-card[data-ri="' + ri + '"]',
+        );
+        if (card) card.classList.add("route-dirty");
+      }
     }
     if (w === "schedules") dirtySchedules = true;
     updateSaveStatus();
+    scheduleDraftSave();
   }
 
   // ═══════════════════════════════════════════
@@ -257,67 +283,297 @@ inject();
     }
   }
 
-  async function persistUnits() {
-    var d = await loadStored();
-    d.units = editUnits;
-    d._saved_at = new Date().toISOString();
-    await saveToServer(d);
-    DATA.units = clone(editUnits);
-    dirtyUnits = false;
-    updateSaveStatus();
-  }
-
-  async function persistRoutes() {
-    var d = await loadStored();
-    d.bus_routes = editRoutes;
-    d._saved_at = new Date().toISOString();
-    await saveToServer(d);
-    DATA.bus_routes = clone(editRoutes);
-    dirtyRoutes = false;
-    dirtyRouteIndices.clear();
-    updateSaveStatus();
-  }
-
-  async function persistSchedules() {
-    var d = await loadStored();
-    d.old_routes = editSchedules;
-    d._saved_at = new Date().toISOString();
-    await saveToServer(d);
-    if (typeof OLD_ROUTES !== "undefined") OLD_ROUTES = clone(editSchedules);
-    dirtySchedules = false;
-    updateSaveStatus();
-  }
-
-  async function persistAll() {
-    var payload = {
+  function currentPayload() {
+    return {
       units: editUnits,
       bus_routes: editRoutes,
       old_routes: editSchedules,
       _saved_at: new Date().toISOString(),
     };
-    await saveToServer(payload);
+  }
+
+  async function saveToServer(data, label) {
+    try {
+      const res = await fetch("/api/data", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ data: data, label: label }),
+      });
+      if (!res.ok) {
+        if (res.status === 401) doLogout();
+        toast("שגיאה בשמירת הנתונים", "error");
+        return false;
+      }
+      return true;
+    } catch (e) {
+      console.error("Error saving data", e);
+      toast("שגיאה בשמירת הנתונים", "error");
+      return false;
+    }
+  }
+
+  // Publish everything that changed: one write, one history version.
+  async function publishAll(label) {
+    if (draftTimer) {
+      clearTimeout(draftTimer);
+      draftTimer = null;
+    }
+    var ok = await saveToServer(currentPayload(), label);
+    if (!ok) return false;
     DATA.units = clone(editUnits);
     DATA.bus_routes = clone(editRoutes);
     if (typeof OLD_ROUTES !== "undefined") OLD_ROUTES = clone(editSchedules);
     dirtyUnits = dirtyRoutes = dirtySchedules = false;
     dirtyRouteIndices.clear();
+    document
+      .querySelectorAll("#routes-list .route-editor-card.route-dirty")
+      .forEach(function (el) {
+        el.classList.remove("route-dirty");
+      });
     updateSaveStatus();
+    setDraftStatus("פורסם " + timeStr(), "published");
+    hideDraftBanner();
+    toast("השינויים פורסמו בהצלחה!", "success");
+    renderDataInfo();
+    return true;
   }
 
-  async function saveToServer(data) {
+  // ═══════════════════════════════════════════
+  // DRAFTS — autosaved to the DB while editing
+  // ═══════════════════════════════════════════
+
+  var draftTimer = null;
+  var DRAFT_DEBOUNCE_MS = 3000;
+
+  function setDraftStatus(text, kind) {
+    var el = $("draft-status");
+    if (!el) return;
+    el.textContent = text || "";
+    el.className = "adm-draft-status" + (kind ? " " + kind : "");
+  }
+
+  function scheduleDraftSave() {
+    if (draftTimer) clearTimeout(draftTimer);
+    setDraftStatus("שינויים לא שמורים…", "pending");
+    draftTimer = setTimeout(saveDraftNow, DRAFT_DEBOUNCE_MS);
+  }
+
+  async function saveDraftNow() {
+    draftTimer = null;
+    if (!(dirtyUnits || dirtyRoutes || dirtySchedules)) return;
     try {
-      const res = await fetch("/api/data", {
+      var res = await fetch("/api/draft", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ data: data }),
+        body: JSON.stringify({ data: currentPayload() }),
       });
-      if (!res.ok) {
-        if (res.status === 401) doLogout();
-        toast("שגיאה בשמירת הנתונים", "error");
+      if (res.ok) {
+        setDraftStatus("טיוטה נשמרה " + timeStr(), "saved");
+      } else if (res.status === 401) {
+        doLogout();
+      } else {
+        setDraftStatus("שגיאה בשמירת טיוטה", "error");
       }
     } catch (e) {
-      console.error("Error saving data", e);
-      toast("שגיאה בשמירת הנתונים", "error");
+      setDraftStatus("שגיאה בשמירת טיוטה", "error");
+    }
+  }
+
+  async function checkForDraft() {
+    try {
+      var res = await fetch("/api/draft");
+      if (!res.ok) return;
+      var body = await res.json();
+      if (!body.draft || !body.draft.data) return;
+      showDraftBanner(body.draft);
+    } catch (e) {
+      /* no draft — nothing to do */
+    }
+  }
+
+  function showDraftBanner(draft) {
+    hideDraftBanner();
+    var when = draft.saved_at
+      ? new Date(draft.saved_at).toLocaleString("he-IL", {
+          dateStyle: "short",
+          timeStyle: "short",
+        })
+      : "";
+    var b = document.createElement("div");
+    b.id = "draft-banner";
+    b.className = "draft-banner";
+    b.innerHTML =
+      '<span class="material-symbols-rounded draft-banner-icon">edit_note</span>' +
+      '<div class="draft-banner-text"><strong>נמצאה טיוטה שטרם פורסמה</strong>' +
+      "<span>" +
+      (when ? "נשמרה לאחרונה ב־" + esc(when) : "") +
+      "</span></div>" +
+      '<div class="draft-banner-actions">' +
+      '<button class="btn btn-primary btn-sm" id="draft-resume">המשך עריכה</button>' +
+      '<button class="btn btn-ghost btn-sm" id="draft-discard">מחק טיוטה</button>' +
+      "</div>";
+    $("adm-main").prepend(b);
+    $("draft-resume").addEventListener("click", function () {
+      resumeDraft(draft);
+    });
+    $("draft-discard").addEventListener("click", discardDraft);
+  }
+
+  function hideDraftBanner() {
+    var b = $("draft-banner");
+    if (b) b.remove();
+  }
+
+  function resumeDraft(draft) {
+    applyDataInto(draft.data);
+    dirtyUnits = dirtyRoutes = dirtySchedules = true;
+    updateSaveStatus();
+    hideDraftBanner();
+    setDraftStatus("טיוטה נטענה — טרם פורסם", "pending");
+    toast("הטיוטה נטענה. לחצו ״פרסם שינויים״ כשתסיימו.", "success");
+  }
+
+  async function discardDraft() {
+    try {
+      await fetch("/api/draft", { method: "DELETE" });
+    } catch (e) {
+      /* best effort */
+    }
+    hideDraftBanner();
+    setDraftStatus("", "");
+    toast("הטיוטה נמחקה", "success");
+  }
+
+  // ═══════════════════════════════════════════
+  // VERSION HISTORY
+  // ═══════════════════════════════════════════
+
+  function initHistoryModal() {
+    if ($("history-modal")) return;
+    var overlay = document.createElement("div");
+    overlay.id = "history-modal";
+    overlay.className = "adm-modal-overlay";
+    overlay.innerHTML =
+      '<div class="adm-modal">' +
+      '<div class="adm-modal-header">' +
+      '<div class="adm-modal-title"><span class="material-symbols-rounded">history</span>היסטוריית גרסאות</div>' +
+      '<button class="adm-modal-close" id="history-close" title="סגור">✕</button>' +
+      "</div>" +
+      '<div class="adm-modal-sub">כל פרסום נשמר כגרסה. שחזור גרסה מחליף מיידית את הנתונים באתר.</div>' +
+      '<div class="adm-modal-body" id="history-list"></div>' +
+      "</div>";
+    document.body.appendChild(overlay);
+    overlay.addEventListener("click", function (e) {
+      if (e.target === overlay) closeHistory();
+    });
+    $("history-close").addEventListener("click", closeHistory);
+    var btn = $("history-btn");
+    if (btn) btn.addEventListener("click", openHistory);
+  }
+
+  function closeHistory() {
+    $("history-modal").classList.remove("open");
+  }
+
+  async function openHistory() {
+    $("history-modal").classList.add("open");
+    var list = $("history-list");
+    list.innerHTML = '<div class="empty-state">טוען גרסאות…</div>';
+    try {
+      var res = await fetch("/api/history");
+      if (res.status === 401) return doLogout();
+      if (!res.ok) throw new Error("history " + res.status);
+      var body = await res.json();
+      renderHistoryList(body.versions || []);
+    } catch (e) {
+      console.error("Error loading history", e);
+      list.innerHTML = '<div class="empty-state">שגיאה בטעינת ההיסטוריה</div>';
+    }
+  }
+
+  function renderHistoryList(versions) {
+    var list = $("history-list");
+    if (!versions.length) {
+      list.innerHTML =
+        '<div class="empty-state">אין עדיין גרסאות שמורות.<br>כל לחיצה על ״פרסם שינויים״ תיצור כאן גרסה שניתן לחזור אליה.</div>';
+      return;
+    }
+    list.innerHTML = versions
+      .map(function (v, i) {
+        var when = new Date(v.saved_at).toLocaleString("he-IL", {
+          dateStyle: "medium",
+          timeStyle: "short",
+        });
+        var counts = "";
+        try {
+          var s = JSON.parse(v.summary || "");
+          counts =
+            s.routes + " קווים · " + s.units + " יחידות · " + s.schedules + " לוחות זמנים";
+        } catch (e) {
+          /* old rows may lack a summary */
+        }
+        return (
+          '<div class="history-item' + (i === 0 ? " current" : "") + '">' +
+          '<div class="history-item-info">' +
+          '<div class="history-item-top"><span class="history-item-when">' +
+          esc(when) +
+          "</span>" +
+          (i === 0
+            ? '<span class="history-current-badge">גרסה נוכחית</span>'
+            : "") +
+          "</div>" +
+          '<div class="history-item-label">' +
+          esc(v.label || "פרסום") +
+          "</div>" +
+          (counts
+            ? '<div class="history-item-counts">' + esc(counts) + "</div>"
+            : "") +
+          "</div>" +
+          (i === 0
+            ? ""
+            : '<button class="btn btn-secondary btn-sm" data-restore="' +
+              v.id +
+              '">שחזר</button>') +
+          "</div>"
+        );
+      })
+      .join("");
+    list.querySelectorAll("[data-restore]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        restoreVersion(+btn.getAttribute("data-restore"));
+      });
+    });
+  }
+
+  async function restoreVersion(id) {
+    if (!confirm("לשחזר גרסה זו? הנתונים המפורסמים באתר יוחלפו מיידית."))
+      return;
+    try {
+      var res = await fetch("/api/history", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "restore", id: id }),
+      });
+      if (res.status === 401) return doLogout();
+      if (!res.ok) {
+        toast("שגיאה בשחזור הגרסה", "error");
+        return;
+      }
+      var body = await res.json();
+      applyDataInto(body.data || {});
+      DATA.units = clone(editUnits);
+      DATA.bus_routes = clone(editRoutes);
+      if (typeof OLD_ROUTES !== "undefined") OLD_ROUTES = clone(editSchedules);
+      dirtyUnits = dirtyRoutes = dirtySchedules = false;
+      dirtyRouteIndices.clear();
+      updateSaveStatus();
+      hideDraftBanner();
+      setDraftStatus("שוחזר " + timeStr(), "published");
+      closeHistory();
+      toast("הגרסה שוחזרה ופורסמה!", "success");
+    } catch (e) {
+      console.error("Error restoring version", e);
+      toast("שגיאה בשחזור הגרסה", "error");
     }
   }
 
@@ -390,9 +646,7 @@ inject();
           .join("");
 
         return (
-          '<div class="unit-editor-card' +
-          (ui === 0 ? " open" : "") +
-          '">' +
+          '<div class="unit-editor-card">' +
           '<div class="unit-editor-header">' +
           '<div class="unit-editor-name"><div class="unit-color-swatch" style="background:' +
           esc(color) +
@@ -577,284 +831,13 @@ inject();
   // ═══════════════════════════════════════════
   // ROUTES TAB
   // ═══════════════════════════════════════════
-
-  function renderRoutesTab() {
-    var c = $("routes-list");
-    if (!editRoutes.length) {
-      c.innerHTML = '<div class="empty-state">אין קווי שאטל.</div>';
-      return;
-    }
-
-    c.innerHTML = editRoutes
-      .map(function (route, ri) {
-        var hasSub = route.sub_routes && route.sub_routes.length > 0;
-        var sc = route.stops ? route.stops.length : 0;
-        var tc = 0;
-        if (route.departure_times) tc = route.departure_times.length;
-        else if (route.departure_times_str)
-          tc = route.departure_times_str.split("-").length;
-
-        var body = "";
-        // Name + description
-        body +=
-          '<div class="form-row"><div class="form-group"><label>שם הקו</label><input class="form-control" value="' +
-          esc(route.name) +
-          '" data-f="rn" data-r="' +
-          ri +
-          '"></div>' +
-          '<div class="form-group"><label>תיאור</label><input class="form-control" value="' +
-          esc(route.description || "") +
-          '" data-f="rd" data-r="' +
-          ri +
-          '"></div></div>';
-        if (route.note != null) {
-          body +=
-            '<div class="form-row single"><div class="form-group"><label>הערה</label><input class="form-control" value="' +
-            esc(route.note) +
-            '" data-f="rno" data-r="' +
-            ri +
-            '"></div></div>';
-        }
-
-        if (hasSub) {
-          body += route.sub_routes
-            .map(function (sr, si) {
-              return buildSubRouteHtml(ri, si, sr);
-            })
-            .join("");
-          body +=
-            '<div class="add-item-row"><button class="btn btn-secondary btn-sm" data-act="add-sub" data-r="' +
-            ri +
-            '">+ הוסף תת-מסלול</button></div>';
-        } else {
-          if (route.stops) body += buildStopsHtml(ri, -1, route.stops);
-          if (route.departure_times)
-            body += buildTimesHtml(ri, -1, route.departure_times);
-          if (route.evening) {
-            body +=
-              '<div class="route-subsection mt-12"><div class="route-subsection-header">לוח ערב</div><div class="route-subsection-body">' +
-              '<div class="form-row"><div class="form-group"><label>שעות ערב</label><input class="form-control" value="' +
-              esc(route.evening.time) +
-              '" data-f="ret" data-r="' +
-              ri +
-              '" style="direction:ltr;text-align:left"></div>' +
-              '<div class="form-group"><label>הפסקה</label><input class="form-control" value="' +
-              esc(route.evening["break"] || "") +
-              '" data-f="reb" data-r="' +
-              ri +
-              '" style="direction:ltr;text-align:left"></div></div></div></div>';
-          }
-        }
-
-        var badge = hasSub
-          ? route.sub_routes.length + " תת-מסלולים"
-          : sc + " תחנות · " + tc + " יציאות";
-        var dirtyClass = dirtyRouteIndices.has(ri) ? " route-dirty" : "";
-        return (
-          '<div class="route-editor-card' +
-          (ri === 0 ? " open" : "") +
-          dirtyClass +
-          '">' +
-          '<div class="route-editor-header">' +
-          '<div class="route-editor-title"><span class="route-badge">' +
-          (ri + 1) +
-          "</span>" +
-          "<span>" + esc(route.name) + "</span>" +
-          '<span class="route-meta-badge">' + badge + "</span>" +
-          "</div>" +
-          '<div class="route-header-actions">' +
-          chevronSvg +
-          "</div></div>" +
-          '<div class="route-editor-body">' +
-          body +
-          "</div></div>"
-        );
-      })
-      .join("");
-
-    bindRoutesDelegatedOnce(c);
-    bindRoutesHeaderEvents(c);
-  }
-
-  function buildSubRouteHtml(ri, si, sr) {
-    return (
-      '<div class="route-subsection mt-8"><div class="route-subsection-header"><span>' +
-      esc(sr.name) +
-      "</span>" +
-      '<button class="btn btn-danger btn-sm btn-icon" data-act="del-sub" data-r="' +
-      ri +
-      '" data-s="' +
-      si +
-      '" title="מחק">✕</button></div>' +
-      '<div class="route-subsection-body">' +
-      '<div class="form-row single"><div class="form-group"><label>שם תת-מסלול</label><input class="form-control" value="' +
-      esc(sr.name) +
-      '" data-f="sn" data-r="' +
-      ri +
-      '" data-s="' +
-      si +
-      '"></div></div>' +
-      buildTimesHtml(ri, si, sr.departure_times || []) +
-      buildStopsHtml(ri, si, sr.stops || []) +
-      "</div></div>"
-    );
-  }
-
-  function buildStopsHtml(ri, si, stops) {
-    var sp = si >= 0 ? ' data-s="' + si + '"' : "";
-    var csvKey = ri + "-" + si;
-    var isCsv = csvModeRoutes.has(csvKey);
-
-    var toggleIcon = isCsv ? "list" : "edit_note";
-    var toggleTitle = isCsv ? "מצב רשימה" : "עריכה מהירה";
-    var toggleBtn = '<button class="csv-toggle-btn" data-act="toggle-csv" data-r="' +
-      ri + '"' + sp + ' data-csv-key="' + csvKey + '" title="' + toggleTitle + '">' +
-      '<span class="material-symbols-rounded">' + toggleIcon + '</span></button>';
-
-    if (isCsv) {
-      var csvText = stops.join("\n");
-      return (
-        '<div class="route-subsection mt-8"><div class="route-subsection-header"><span>תחנות עצירה (' +
-        stops.length + ')</span><div class="subsection-header-actions">' + toggleBtn + '</div></div>' +
-        '<div class="route-subsection-body">' +
-        '<textarea class="form-control csv-textarea" data-f="csv-stops" data-r="' + ri + '"' + sp +
-        ' placeholder="תחנה אחת בכל שורה..." rows="' + Math.max(4, stops.length + 1) + '">' +
-        esc(csvText) + '</textarea></div></div>'
-      );
-    }
-
-    var items = stops
-      .map(function (stop, idx) {
-        return (
-          '<div class="stop-editor-item" draggable="true" data-r="' + ri + '"' + sp + ' data-i="' + idx + '">' +
-          '<span class="stop-drag-handle material-symbols-rounded" title="גרור לסידור">drag_indicator</span>' +
-          '<span class="stop-num-badge">' +
-          (idx + 1) +
-          "</span>" +
-          '<input class="form-control" style="flex:1" value="' +
-          esc(stop) +
-          '" data-f="stp" data-r="' +
-          ri +
-          '"' +
-          sp +
-          ' data-i="' +
-          idx +
-          '">' +
-          '<div class="stop-move-btns">' +
-          '<button class="stop-move-btn" data-act="stop-up" data-r="' +
-          ri +
-          '"' +
-          sp +
-          ' data-i="' +
-          idx +
-          '">▲</button>' +
-          '<button class="stop-move-btn" data-act="stop-dn" data-r="' +
-          ri +
-          '"' +
-          sp +
-          ' data-i="' +
-          idx +
-          '">▼</button>' +
-          "</div>" +
-          '<button class="btn btn-danger btn-sm btn-icon" data-act="del-stp" data-r="' +
-          ri +
-          '"' +
-          sp +
-          ' data-i="' +
-          idx +
-          '">✕</button>' +
-          "</div>"
-        );
-      })
-      .join("");
-    return (
-      '<div class="route-subsection mt-8"><div class="route-subsection-header"><span>תחנות עצירה (' +
-      stops.length +
-      ')</span><div class="subsection-header-actions">' +
-      '<button class="btn btn-secondary btn-sm" data-act="add-stp" data-r="' +
-      ri +
-      '"' +
-      sp +
-      ">+ תחנה</button>" + toggleBtn + "</div></div>" +
-      '<div class="route-subsection-body"><div class="stops-editor-list">' +
-      items +
-      "</div></div></div>"
-    );
-  }
-
-  function buildTimesHtml(ri, si, times) {
-    var sp = si >= 0 ? ' data-s="' + si + '"' : "";
-    var csvKey = (si >= 0 ? ri + "-" + si : ri) + "-times";
-    var isCsv = csvModeRoutes.has(csvKey);
-
-    var toggleIcon = isCsv ? "list" : "edit_note";
-    var toggleTitle = isCsv ? "מצב רשימה" : "עריכה מהירה";
-    var toggleBtn = '<button class="csv-toggle-btn" data-act="toggle-csv" data-r="' +
-      ri + '"' + sp + ' data-csv-key="' + csvKey + '" title="' + toggleTitle + '">' +
-      '<span class="material-symbols-rounded">' + toggleIcon + '</span></button>';
-
-    if (isCsv) {
-      var csvText = times.map(function (t) {
-        return t.time + (t.note ? " | " + t.note : "");
-      }).join("\n");
-      return (
-        '<div class="route-subsection mt-8"><div class="route-subsection-header"><span>שעות יציאה (' +
-        times.length + ')</span><div class="subsection-header-actions">' + toggleBtn + '</div></div>' +
-        '<div class="route-subsection-body">' +
-        '<textarea class="form-control csv-textarea" data-f="csv-times" data-r="' + ri + '"' + sp +
-        ' style="direction:ltr;text-align:left" placeholder="שעה אחת בכל שורה...\n07:20\n08:00 | תגבור" rows="' +
-        Math.max(4, times.length + 1) + '">' + esc(csvText) + '</textarea></div></div>'
-      );
-    }
-
-    var chips = times
-      .map(function (t, ti) {
-        var rein = t.note && t.note.indexOf("תגבור") >= 0;
-        return (
-          '<div class="time-chip' +
-          (rein ? " reinforce" : "") +
-          '">' +
-          '<input type="time" value="' +
-          esc(t.time) +
-          '" data-f="tv" data-r="' +
-          ri +
-          '"' +
-          sp +
-          ' data-t="' +
-          ti +
-          '">' +
-          '<button class="time-chip-reinforce-toggle" data-act="tog-rein" data-r="' +
-          ri +
-          '"' +
-          sp +
-          ' data-t="' +
-          ti +
-          '" title="תגבור">ת</button>' +
-          '<button class="time-chip-del" data-act="del-tm" data-r="' +
-          ri +
-          '"' +
-          sp +
-          ' data-t="' +
-          ti +
-          '">✕</button>' +
-          "</div>"
-        );
-      })
-      .join("");
-    return (
-      '<div class="route-subsection mt-8"><div class="route-subsection-header"><span>שעות יציאה (' +
-      times.length +
-      ')</span><div class="subsection-header-actions">' +
-      '<button class="btn btn-secondary btn-sm" data-act="add-tm" data-r="' +
-      ri +
-      '"' +
-      sp +
-      ">+ שעה</button>" + toggleBtn + "</div></div>" +
-      '<div class="route-subsection-body"><div class="times-editor-list">' +
-      chips +
-      "</div></div></div>"
-    );
-  }
+  //
+  // Each route is a collapsible card (all closed on load). An open card
+  // shows a tab bar that cleanly separates the line's sections:
+  //   · simple route:  שעות יציאה | תחנות עצירה | פרטי הקו
+  //   · route with sub-routes:  a tab per sub-route + פרטי הקו,
+  //     where each sub-route pane has a שעות/תחנות segmented switch.
+  // Edits re-render ONLY the affected card, so the page never jumps.
 
   function routeRef(ri, si) {
     return si >= 0 ? editRoutes[ri].sub_routes[si] : editRoutes[ri];
@@ -901,6 +884,367 @@ inject();
     });
   }
 
+  // "פיזור למקומות עבודה - מסלול 105" → "מסלול 105"
+  function shortSubName(sr, si) {
+    var name = (sr && sr.name) || "";
+    var m = /(מסלול.*)$/.exec(name);
+    var label = m ? m[1].trim() : name.trim();
+    return label || "תת-מסלול " + (si + 1);
+  }
+
+  function timesCount(ref) {
+    return ref && ref.departure_times ? ref.departure_times.length : 0;
+  }
+
+  function stopsCount(ref) {
+    return ref && ref.stops ? ref.stops.length : 0;
+  }
+
+  // ─── Card skeleton ───
+
+  function buildRouteCardHtml(route, ri) {
+    var ui = getRouteUI(ri);
+    var hasSub = route.sub_routes && route.sub_routes.length > 0;
+
+    // Sanitize the active tab (sub-routes may have been added/removed).
+    if (!ui.tab) ui.tab = hasSub ? "sub-0" : "times";
+    if (/^sub-/.test(ui.tab)) {
+      var subIdx = +ui.tab.slice(4);
+      if (!hasSub) ui.tab = "times";
+      else if (subIdx >= route.sub_routes.length) ui.tab = "sub-0";
+    } else if (hasSub && ui.tab !== "details") {
+      ui.tab = "sub-0";
+    }
+
+    var badge = hasSub
+      ? route.sub_routes.length + " מסלולים"
+      : stopsCount(route) + " תחנות · " + timesCount(route) + " יציאות";
+
+    var header =
+      '<div class="route-editor-header" data-r="' + ri + '">' +
+      '<div class="route-editor-title"><span class="route-badge">' +
+      (ri + 1) +
+      '</span><span class="route-card-name">' +
+      esc(route.name) +
+      "</span></div>" +
+      '<div class="route-header-actions"><span class="route-meta-badge">' +
+      badge +
+      "</span>" +
+      chevronSvg +
+      "</div></div>";
+
+    var body = "";
+    if (ui.open) {
+      var pane;
+      if (ui.tab === "details") pane = buildDetailsPane(route, ri);
+      else if (/^sub-/.test(ui.tab)) pane = buildSubPane(ri, +ui.tab.slice(4));
+      else if (ui.tab === "stops") pane = buildStopsPane(ri, -1);
+      else pane = buildTimesPane(ri, -1);
+      body =
+        '<div class="route-editor-body">' +
+        buildRouteTabsHtml(route, ri, ui) +
+        '<div class="route-tab-pane">' +
+        pane +
+        "</div></div>";
+    }
+
+    return (
+      '<div class="route-editor-card' +
+      (ui.open ? " open" : "") +
+      (dirtyRouteIndices.has(ri) ? " route-dirty" : "") +
+      '" data-ri="' +
+      ri +
+      '">' +
+      header +
+      body +
+      "</div>"
+    );
+  }
+
+  function buildRouteTabsHtml(route, ri, ui) {
+    var hasSub = route.sub_routes && route.sub_routes.length > 0;
+    var tabs = [];
+    if (hasSub) {
+      route.sub_routes.forEach(function (sr, si) {
+        tabs.push({
+          id: "sub-" + si,
+          icon: "alt_route",
+          label: shortSubName(sr, si),
+        });
+      });
+    } else {
+      tabs.push({
+        id: "times",
+        icon: "schedule",
+        label: "שעות יציאה",
+        count: timesCount(route),
+      });
+      tabs.push({
+        id: "stops",
+        icon: "location_on",
+        label: "תחנות עצירה",
+        count: stopsCount(route),
+      });
+    }
+    tabs.push({ id: "details", icon: "tune", label: "פרטי הקו" });
+
+    return (
+      '<div class="route-tabbar" role="tablist">' +
+      tabs
+        .map(function (t) {
+          return (
+            '<button class="route-tab' +
+            (ui.tab === t.id ? " active" : "") +
+            '" role="tab" data-act="card-tab" data-r="' +
+            ri +
+            '" data-tab="' +
+            t.id +
+            '">' +
+            '<span class="material-symbols-rounded">' +
+            t.icon +
+            "</span><span>" +
+            esc(t.label) +
+            "</span>" +
+            (t.count != null
+              ? '<span class="route-tab-count">' + t.count + "</span>"
+              : "") +
+            "</button>"
+          );
+        })
+        .join("") +
+      "</div>"
+    );
+  }
+
+  // ─── Panes ───
+
+  function buildTimesPane(ri, si) {
+    var ref = routeRef(ri, si);
+    var times = ref.departure_times || [];
+    var sp = si >= 0 ? ' data-s="' + si + '"' : "";
+    var csvKey = (si >= 0 ? ri + "-" + si : ri) + "-times";
+    var isCsv = csvModeRoutes.has(csvKey);
+
+    var toggleBtn =
+      '<button class="csv-toggle-btn" data-act="toggle-csv" data-r="' +
+      ri + '"' + sp + ' data-csv-key="' + csvKey + '" title="' +
+      (isCsv ? "חזרה לתצוגת שעונים" : "עריכה מהירה כטקסט") + '">' +
+      '<span class="material-symbols-rounded">' +
+      (isCsv ? "schedule" : "edit_note") +
+      "</span></button>";
+    var addBtn =
+      '<button class="btn btn-secondary btn-sm" data-act="add-tm" data-r="' +
+      ri + '"' + sp + ">+ שעה</button>";
+
+    var toolbar =
+      '<div class="pane-toolbar">' +
+      '<div class="pane-hint">לחיצה על <b>ת</b> מסמנת שעת תגבור (ימי א׳ וה׳ בלבד)</div>' +
+      '<div class="pane-actions">' + addBtn + toggleBtn + "</div></div>";
+
+    var content;
+    if (isCsv) {
+      var csvText = times
+        .map(function (t) {
+          return t.time + (t.note ? " | " + t.note : "");
+        })
+        .join("\n");
+      content =
+        '<textarea class="form-control csv-textarea" data-f="csv-times" data-r="' +
+        ri + '"' + sp +
+        ' style="direction:ltr;text-align:left" placeholder="שעה אחת בכל שורה...\n07:20\n08:00 | תגבור" rows="' +
+        Math.max(4, times.length + 1) + '">' + esc(csvText) + "</textarea>";
+    } else if (!times.length) {
+      content =
+        '<div class="pane-empty"><span class="material-symbols-rounded">schedule</span>אין שעות יציאה עדיין — הוסיפו שעה ראשונה</div>';
+    } else {
+      content =
+        '<div class="times-editor-list">' +
+        times
+          .map(function (t, ti) {
+            var rein = t.note && t.note.indexOf("תגבור") >= 0;
+            return (
+              '<div class="time-chip' + (rein ? " reinforce" : "") + '">' +
+              '<input type="time" value="' + esc(t.time) +
+              '" data-f="tv" data-r="' + ri + '"' + sp +
+              ' data-t="' + ti + '">' +
+              '<button class="time-chip-reinforce-toggle" data-act="tog-rein" data-r="' +
+              ri + '"' + sp + ' data-t="' + ti + '" title="תגבור">ת</button>' +
+              '<button class="time-chip-del" data-act="del-tm" data-r="' +
+              ri + '"' + sp + ' data-t="' + ti + '">✕</button>' +
+              "</div>"
+            );
+          })
+          .join("") +
+        "</div>";
+    }
+
+    var evening = "";
+    if (si < 0 && editRoutes[ri].evening) {
+      evening =
+        '<div class="pane-evening">' +
+        '<div class="pane-evening-title"><span class="material-symbols-rounded">dark_mode</span>לוח ערב</div>' +
+        '<div class="form-row">' +
+        '<div class="form-group"><label>שעות ערב</label><input class="form-control" value="' +
+        esc(editRoutes[ri].evening.time) +
+        '" data-f="ret" data-r="' + ri +
+        '" style="direction:ltr;text-align:left"></div>' +
+        '<div class="form-group"><label>הפסקה</label><input class="form-control" value="' +
+        esc(editRoutes[ri].evening["break"] || "") +
+        '" data-f="reb" data-r="' + ri +
+        '" style="direction:ltr;text-align:left"></div></div></div>';
+    }
+
+    return toolbar + content + evening;
+  }
+
+  function buildStopsPane(ri, si) {
+    var ref = routeRef(ri, si);
+    var stops = ref.stops || [];
+    var sp = si >= 0 ? ' data-s="' + si + '"' : "";
+    var csvKey = ri + "-" + si;
+    var isCsv = csvModeRoutes.has(csvKey);
+
+    var toggleBtn =
+      '<button class="csv-toggle-btn" data-act="toggle-csv" data-r="' +
+      ri + '"' + sp + ' data-csv-key="' + csvKey + '" title="' +
+      (isCsv ? "חזרה לתצוגת רשימה" : "עריכה מהירה כטקסט") + '">' +
+      '<span class="material-symbols-rounded">' +
+      (isCsv ? "list" : "edit_note") +
+      "</span></button>";
+    var addBtn =
+      '<button class="btn btn-secondary btn-sm" data-act="add-stp" data-r="' +
+      ri + '"' + sp + ">+ תחנה</button>";
+
+    var toolbar =
+      '<div class="pane-toolbar">' +
+      '<div class="pane-hint">גררו תחנה כדי לשנות את סדר הנסיעה</div>' +
+      '<div class="pane-actions">' + addBtn + toggleBtn + "</div></div>";
+
+    var content;
+    if (isCsv) {
+      content =
+        '<textarea class="form-control csv-textarea" data-f="csv-stops" data-r="' +
+        ri + '"' + sp + ' placeholder="תחנה אחת בכל שורה..." rows="' +
+        Math.max(4, stops.length + 1) + '">' +
+        esc(stops.join("\n")) + "</textarea>";
+    } else if (!stops.length) {
+      content =
+        '<div class="pane-empty"><span class="material-symbols-rounded">location_off</span>אין תחנות עדיין — הוסיפו תחנה ראשונה</div>';
+    } else {
+      content =
+        '<div class="stops-editor-list">' +
+        stops
+          .map(function (stop, idx) {
+            return (
+              '<div class="stop-editor-item" draggable="true" data-r="' +
+              ri + '"' + sp + ' data-i="' + idx + '">' +
+              '<span class="stop-drag-handle material-symbols-rounded" title="גרור לסידור">drag_indicator</span>' +
+              '<span class="stop-num-badge">' + (idx + 1) + "</span>" +
+              '<input class="form-control" style="flex:1" value="' +
+              esc(stop) + '" data-f="stp" data-r="' + ri + '"' + sp +
+              ' data-i="' + idx + '">' +
+              '<div class="stop-move-btns">' +
+              '<button class="stop-move-btn" data-act="stop-up" data-r="' +
+              ri + '"' + sp + ' data-i="' + idx + '">▲</button>' +
+              '<button class="stop-move-btn" data-act="stop-dn" data-r="' +
+              ri + '"' + sp + ' data-i="' + idx + '">▼</button>' +
+              "</div>" +
+              '<button class="btn btn-danger btn-sm btn-icon" data-act="del-stp" data-r="' +
+              ri + '"' + sp + ' data-i="' + idx + '">✕</button>' +
+              "</div>"
+            );
+          })
+          .join("") +
+        "</div>";
+    }
+
+    return toolbar + content;
+  }
+
+  function buildDetailsPane(route, ri) {
+    var hasSub = route.sub_routes && route.sub_routes.length > 0;
+    var html =
+      '<div class="form-row">' +
+      '<div class="form-group"><label>שם הקו</label><input class="form-control" value="' +
+      esc(route.name) + '" data-f="rn" data-r="' + ri + '"></div>' +
+      '<div class="form-group"><label>תיאור</label><input class="form-control" value="' +
+      esc(route.description || "") + '" data-f="rd" data-r="' + ri +
+      '"></div></div>' +
+      '<div class="form-row single"><div class="form-group"><label>הערה (מוצגת באתר)</label><input class="form-control" value="' +
+      esc(route.note || "") + '" data-f="rno" data-r="' + ri +
+      '" placeholder="למשל: איסוף ממקומות העבודה בסוף יום..."></div></div>';
+    if (hasSub) {
+      html +=
+        '<div class="add-item-row"><button class="btn btn-secondary btn-sm" data-act="add-sub" data-r="' +
+        ri + '">+ הוסף תת-מסלול</button></div>';
+    }
+    return html;
+  }
+
+  function buildSubPane(ri, si) {
+    var ui = getRouteUI(ri);
+    var sr = editRoutes[ri].sub_routes[si];
+    if (!sr) return "";
+    var seg = ui.subTab[si] || "times";
+
+    function segBtn(id, icon, label, count) {
+      return (
+        '<button class="seg-btn' + (seg === id ? " active" : "") +
+        '" data-act="sub-seg" data-r="' + ri + '" data-s="' + si +
+        '" data-seg="' + id + '">' +
+        '<span class="material-symbols-rounded">' + icon + "</span>" +
+        esc(label) +
+        '<span class="route-tab-count">' + count + "</span></button>"
+      );
+    }
+
+    return (
+      '<div class="subpane-head">' +
+      '<div class="form-group" style="flex:1"><label>שם תת-המסלול</label>' +
+      '<input class="form-control" value="' + esc(sr.name) +
+      '" data-f="sn" data-r="' + ri + '" data-s="' + si +
+      '" placeholder="שם תת-מסלול"></div>' +
+      '<button class="btn btn-danger btn-sm btn-icon" data-act="del-sub" data-r="' +
+      ri + '" data-s="' + si + '" title="מחק תת-מסלול">✕</button>' +
+      "</div>" +
+      '<div class="segmented">' +
+      segBtn("times", "schedule", "שעות יציאה", timesCount(sr)) +
+      segBtn("stops", "location_on", "תחנות עצירה", stopsCount(sr)) +
+      "</div>" +
+      (seg === "stops" ? buildStopsPane(ri, si) : buildTimesPane(ri, si))
+    );
+  }
+
+  // ─── Render / targeted re-render ───
+
+  function renderRoutesTab() {
+    var c = $("routes-list");
+    if (!editRoutes.length) {
+      c.innerHTML = '<div class="empty-state">אין קווי שאטל.</div>';
+      return;
+    }
+    c.innerHTML = editRoutes
+      .map(function (route, ri) {
+        return buildRouteCardHtml(route, ri);
+      })
+      .join("");
+    bindRoutesDelegatedOnce(c);
+  }
+
+  // Re-render a single card in place. The rest of the page — including the
+  // scroll position and every other open card — is untouched.
+  function rerenderCard(ri) {
+    var c = $("routes-list");
+    var card = c.querySelector('.route-editor-card[data-ri="' + ri + '"]');
+    if (!card || !editRoutes[ri]) {
+      renderRoutesTab();
+      return;
+    }
+    var tmp = document.createElement("div");
+    tmp.innerHTML = buildRouteCardHtml(editRoutes[ri], ri);
+    card.replaceWith(tmp.firstElementChild);
+  }
+
   // ─── Bind delegated events ONCE on the routes container ───
   var routesDelegated = false;
   var dragState = null;
@@ -919,10 +1263,10 @@ inject();
 
       if (f === "rn") {
         editRoutes[ri].name = el.value;
-        el
+        var nameEl = el
           .closest(".route-editor-card")
-          .querySelector(".route-editor-title > span:last-child").textContent =
-          el.value;
+          .querySelector(".route-card-name");
+        if (nameEl) nameEl.textContent = el.value;
       }
       if (f === "rd") editRoutes[ri].description = el.value || undefined;
       if (f === "rno") editRoutes[ri].note = el.value || undefined;
@@ -945,11 +1289,15 @@ inject();
         if (tref.departure_times) tref.departure_times[ti].time = el.value;
       }
       if (f === "csv-stops") {
-        var ref = routeRef(ri, si);
-        ref.stops = el.value.split("\n").filter(function (l) { return l.trim(); });
+        var sref = routeRef(ri, si);
+        sref.stops = el.value.split("\n").filter(function (l) {
+          return l.trim();
+        });
       }
       if (f === "csv-times") {
-        var lines = el.value.split("\n").filter(function (l) { return l.trim(); });
+        var lines = el.value.split("\n").filter(function (l) {
+          return l.trim();
+        });
         routeRef(ri, si).departure_times = lines.map(function (line) {
           var parts = line.split("|");
           var t = { time: padTime(parts[0].trim()) };
@@ -960,8 +1308,8 @@ inject();
       markDirty("routes", ri);
     });
 
-    // When a time input is committed (blur), re-sort the route's times so they
-    // stay in chronological order automatically.
+    // When a time input is committed (blur), re-sort the times so they stay
+    // chronological — then repaint just this card.
     c.addEventListener("change", function (e) {
       var el = e.target;
       if (el.getAttribute("data-f") !== "tv") return;
@@ -972,105 +1320,22 @@ inject();
       if (!ref || !ref.departure_times) return;
       sortRouteTimes(ri, si);
       markDirty("routes", ri);
-      renderRoutesTab();
-      openRouteCard(ri);
+      rerenderCard(ri);
     });
 
     c.addEventListener("click", function (e) {
       var btn = e.target.closest("[data-act]");
-      if (!btn) return;
       // Ignore actions from other tabs (schedules use the same pattern)
-      if (!btn.closest("#routes-list")) return;
-      var act = btn.getAttribute("data-act"),
-        ri = +btn.getAttribute("data-r");
-      var si = btn.getAttribute("data-s");
-      si = si != null ? +si : -1;
-      var idx = btn.getAttribute("data-i");
-      idx = idx != null ? +idx : -1;
-      var ti = btn.getAttribute("data-t");
-      ti = ti != null ? +ti : -1;
-
-      if (act === "add-stp") {
-        var ref = routeRef(ri, si);
-        if (!ref.stops) ref.stops = [];
-        ref.stops.push("תחנה חדשה");
-        markDirty("routes", ri);
-        renderRoutesTab();
-        openRouteCard(ri);
+      if (btn && btn.closest("#routes-list")) {
+        handleRouteAction(btn);
+        return;
       }
-      if (act === "del-stp" && idx >= 0) {
-        routeRef(ri, si).stops.splice(idx, 1);
-        markDirty("routes", ri);
-        renderRoutesTab();
-        openRouteCard(ri);
-      }
-      if (act === "stop-up" && idx > 0) {
-        var s = routeRef(ri, si).stops;
-        var t = s[idx - 1];
-        s[idx - 1] = s[idx];
-        s[idx] = t;
-        markDirty("routes", ri);
-        renderRoutesTab();
-        openRouteCard(ri);
-      }
-      if (act === "stop-dn") {
-        var s = routeRef(ri, si).stops;
-        if (idx < s.length - 1) {
-          var t = s[idx + 1];
-          s[idx + 1] = s[idx];
-          s[idx] = t;
-          markDirty("routes", ri);
-          renderRoutesTab();
-          openRouteCard(ri);
-        }
-      }
-      if (act === "add-tm") {
-        var tref = routeRef(ri, si);
-        if (!tref.departure_times) tref.departure_times = [];
-        tref.departure_times.push({ time: "08:00" });
-        sortRouteTimes(ri, si);
-        markDirty("routes", ri);
-        renderRoutesTab();
-        openRouteCard(ri);
-      }
-      if (act === "del-tm" && ti >= 0) {
-        routeRef(ri, si).departure_times.splice(ti, 1);
-        markDirty("routes", ri);
-        renderRoutesTab();
-        openRouteCard(ri);
-      }
-      if (act === "tog-rein" && ti >= 0) {
-        var dt = routeRef(ri, si).departure_times[ti];
-        if (dt.note && dt.note.indexOf("תגבור") >= 0) delete dt.note;
-        else dt.note = "תגבור- רק בימי ראשון וחמישי";
-        markDirty("routes", ri);
-        renderRoutesTab();
-        openRouteCard(ri);
-      }
-      if (act === "add-sub") {
-        if (!editRoutes[ri].sub_routes) editRoutes[ri].sub_routes = [];
-        editRoutes[ri].sub_routes.push({
-          name: "תת-מסלול חדש",
-          departure_times: [],
-          stops: [],
-        });
-        markDirty("routes", ri);
-        renderRoutesTab();
-        openRouteCard(ri);
-      }
-      if (act === "toggle-csv") {
-        var key = btn.getAttribute("data-csv-key") || (ri + "-" + si);
-        if (csvModeRoutes.has(key)) csvModeRoutes.delete(key);
-        else csvModeRoutes.add(key);
-        renderRoutesTab();
-        openRouteCard(ri);
-      }
-      if (act === "del-sub" && si >= 0) {
-        if (!confirm("למחוק תת-מסלול זה?")) return;
-        editRoutes[ri].sub_routes.splice(si, 1);
-        markDirty("routes", ri);
-        renderRoutesTab();
-        openRouteCard(ri);
+      var head = e.target.closest(".route-editor-header");
+      if (head && head.closest("#routes-list")) {
+        var ri = +head.getAttribute("data-r");
+        var ui = getRouteUI(ri);
+        ui.open = !ui.open;
+        rerenderCard(ri);
       }
     });
 
@@ -1121,8 +1386,7 @@ inject();
       s.splice(insertAt, 0, moved);
       markDirty("routes", dragState.ri);
       dragState = null;
-      renderRoutesTab();
-      openRouteCard(targetRi);
+      rerenderCard(targetRi);
     });
     c.addEventListener("dragend", function () {
       dragState = null;
@@ -1132,29 +1396,110 @@ inject();
     });
   }
 
-  function bindRoutesHeaderEvents(c) {
-    c.querySelectorAll(".route-editor-header").forEach(function (h) {
-      h.addEventListener("click", function (e) {
-        if (e.target.closest("[data-act]")) return;
-        h.parentElement.classList.toggle("open");
-      });
-    });
-  }
+  function handleRouteAction(btn) {
+    var act = btn.getAttribute("data-act"),
+      ri = +btn.getAttribute("data-r");
+    var si = btn.getAttribute("data-s");
+    si = si != null ? +si : -1;
+    var idx = btn.getAttribute("data-i");
+    idx = idx != null ? +idx : -1;
+    var ti = btn.getAttribute("data-t");
+    ti = ti != null ? +ti : -1;
+    var ui = getRouteUI(ri);
 
-  function openRouteCard(ri) {
-    var cards = $("routes-list").querySelectorAll(".route-editor-card");
-    if (cards[ri]) cards[ri].classList.add("open");
+    if (act === "card-tab") {
+      ui.tab = btn.getAttribute("data-tab");
+      rerenderCard(ri);
+    }
+    if (act === "sub-seg" && si >= 0) {
+      ui.subTab[si] = btn.getAttribute("data-seg");
+      rerenderCard(ri);
+    }
+    if (act === "toggle-csv") {
+      var key = btn.getAttribute("data-csv-key");
+      if (csvModeRoutes.has(key)) csvModeRoutes.delete(key);
+      else csvModeRoutes.add(key);
+      rerenderCard(ri);
+    }
+    if (act === "add-stp") {
+      var ref = routeRef(ri, si);
+      if (!ref.stops) ref.stops = [];
+      ref.stops.push("תחנה חדשה");
+      markDirty("routes", ri);
+      rerenderCard(ri);
+    }
+    if (act === "del-stp" && idx >= 0) {
+      routeRef(ri, si).stops.splice(idx, 1);
+      markDirty("routes", ri);
+      rerenderCard(ri);
+    }
+    if (act === "stop-up" && idx > 0) {
+      var s1 = routeRef(ri, si).stops;
+      var t1 = s1[idx - 1];
+      s1[idx - 1] = s1[idx];
+      s1[idx] = t1;
+      markDirty("routes", ri);
+      rerenderCard(ri);
+    }
+    if (act === "stop-dn") {
+      var s2 = routeRef(ri, si).stops;
+      if (idx >= 0 && idx < s2.length - 1) {
+        var t2 = s2[idx + 1];
+        s2[idx + 1] = s2[idx];
+        s2[idx] = t2;
+        markDirty("routes", ri);
+        rerenderCard(ri);
+      }
+    }
+    if (act === "add-tm") {
+      var tref = routeRef(ri, si);
+      if (!tref.departure_times) tref.departure_times = [];
+      tref.departure_times.push({ time: "08:00" });
+      sortRouteTimes(ri, si);
+      markDirty("routes", ri);
+      rerenderCard(ri);
+    }
+    if (act === "del-tm" && ti >= 0) {
+      routeRef(ri, si).departure_times.splice(ti, 1);
+      markDirty("routes", ri);
+      rerenderCard(ri);
+    }
+    if (act === "tog-rein" && ti >= 0) {
+      var dt = routeRef(ri, si).departure_times[ti];
+      if (dt.note && dt.note.indexOf("תגבור") >= 0) delete dt.note;
+      else dt.note = "תגבור- רק בימי ראשון וחמישי";
+      markDirty("routes", ri);
+      rerenderCard(ri);
+    }
+    if (act === "add-sub") {
+      if (!editRoutes[ri].sub_routes) editRoutes[ri].sub_routes = [];
+      editRoutes[ri].sub_routes.push({
+        name: "תת-מסלול חדש",
+        departure_times: [],
+        stops: [],
+      });
+      ui.tab = "sub-" + (editRoutes[ri].sub_routes.length - 1);
+      markDirty("routes", ri);
+      rerenderCard(ri);
+    }
+    if (act === "del-sub" && si >= 0) {
+      if (!confirm("למחוק תת-מסלול זה?")) return;
+      editRoutes[ri].sub_routes.splice(si, 1);
+      ui.tab = editRoutes[ri].sub_routes.length ? "sub-0" : "details";
+      delete ui.subTab[si];
+      markDirty("routes", ri);
+      rerenderCard(ri);
+    }
   }
 
   // ─── Collapse / Expand All Routes ───
   var routesAllOpen = false;
   $("toggle-all-routes").addEventListener("click", function () {
     routesAllOpen = !routesAllOpen;
-    var cards = $("routes-list").querySelectorAll(".route-editor-card");
-    cards.forEach(function (card) {
-      if (routesAllOpen) card.classList.add("open");
-      else card.classList.remove("open");
+    editRoutes.forEach(function (_, ri) {
+      getRouteUI(ri).open = routesAllOpen;
     });
+    renderRoutesTab();
     var btn = $("toggle-all-routes");
     btn.querySelector(".material-symbols-rounded").textContent = routesAllOpen ? "unfold_less" : "unfold_more";
     btn.querySelector("span:last-child").textContent = routesAllOpen ? "סגור הכל" : "פתח הכל";
@@ -1425,13 +1770,8 @@ inject();
   function bindSettingsEvents() {
     // Change password
     $("change-pwd-btn").addEventListener("click", async function () {
-      var o = $("old-pwd").value,
-        n = $("new-pwd").value,
+      var n = $("new-pwd").value,
         cn = $("confirm-pwd").value;
-      if (o !== getPassword()) {
-        toast("סיסמה נוכחית שגויה", "error");
-        return;
-      }
       if (!n || n.length < 4) {
         toast("סיסמה חדשה קצרה מדי (מינימום 4 תווים)", "error");
         return;
@@ -1526,15 +1866,8 @@ inject();
       reader.onload = async function (e) {
         try {
           var d = JSON.parse(e.target.result);
-          if (d.units) editUnits = d.units;
-          if (d.bus_routes) editRoutes = d.bus_routes;
-          editRoutes.forEach(normalizeRouteTimes);
-          if (d.old_routes) editSchedules = d.old_routes;
-          await persistAll();
-          renderUnitsTab();
-          renderRoutesTab();
-          renderSchedulesTab();
-          renderDataInfo();
+          applyDataInto(d);
+          await publishAll("ייבוא מקובץ JSON");
           toast("נתונים יובאו בהצלחה!", "success");
         } catch (err) {
           toast("שגיאה בקריאת הקובץ: " + err.message, "error");
