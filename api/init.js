@@ -21,6 +21,25 @@ export default async function handler(req, res) {
       );
     `;
 
+    // Crowd-sourced rider reports (see api/reports.js). Created here too so a
+    // fresh database comes up with everything the app needs.
+    await sql`
+      CREATE TABLE IF NOT EXISTS shuttle_reports (
+        id SERIAL PRIMARY KEY,
+        route_key TEXT NOT NULL,
+        trip_time TEXT,
+        stop_name TEXT NOT NULL,
+        stop_index INT NOT NULL,
+        client_id TEXT,
+        reported_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+    `;
+
+    await sql`
+      CREATE INDEX IF NOT EXISTS shuttle_reports_reported_at_idx
+        ON shuttle_reports (reported_at DESC);
+    `;
+
     // Insert default password if not exists
     const defaultPassword = "admin2024!";
     const hashedPassword = await bcrypt.hash(defaultPassword, 10);

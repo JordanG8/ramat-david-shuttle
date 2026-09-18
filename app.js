@@ -8,6 +8,11 @@ import {
   DATA as fallbackDATA,
   OLD_ROUTES as fallbackOLD_ROUTES,
 } from "./src/data/fallbackData.js";
+import {
+  activeTrips,
+  activeTripForRoute,
+  estimateArrival,
+} from "./src/lib/liveEta.js";
 
 // Initialize Vercel Analytics
 inject();
@@ -151,6 +156,7 @@ function renderStationsHtml() {
 // ─── Hub-and-Spoke State ───
 const VALID_VIEWS = [
   "home",
+  "live",
   "train",
   "tzomet",
   "internal",
@@ -173,17 +179,58 @@ const mapPinSVG = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" s
 const moonSVG = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`;
 const infoSVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>`;
 
-function renderStopsCard(stops) {
+function renderStopsCard(stops, opts) {
+  opts = opts || {};
+  // When we know which bus is running — either from a rider report or from the
+  // next scheduled departure — each stop carries its own estimated time.
+  const ctx = opts.ctx || null;
+  const routeKey = opts.routeKey || null;
+
   const stopsHtml = stops
     .map((stop, i) => {
       const hada = isHadaStop(stop) ? " stop-hada" : "";
-      return `<div class="stop-item${hada}"><span class="stop-num">${i + 1}</span>${esc(stop)}</div>`;
+      let extraClass = "";
+      let meta = "";
+
+      if (ctx && routeKey) {
+        const seenIndex = ctx.trip ? ctx.trip.stopIndex : -1;
+        if (i === seenIndex) {
+          extraClass = " stop-item--here";
+          meta = `<span class="stop-here">האוטובוס כאן</span>`;
+        } else if (i < seenIndex) {
+          extraClass = " stop-item--passed";
+        } else {
+          const eta = etaForStop(routeKey, ctx, i);
+          if (eta) {
+            const tone = ctx.isLive
+              ? " stop-eta--live"
+              : eta.source === "default"
+                ? " stop-eta--rough"
+                : "";
+            meta = `<span class="stop-eta${tone}">${esc(eta.time)}</span>`;
+          }
+        }
+      }
+
+      return `<div class="stop-item${hada}${extraClass}"><span class="stop-num">${i + 1}</span><span class="stop-name">${esc(stop)}</span>${meta}</div>`;
     })
     .join("");
+
+  // Say where the numbers come from, so nobody mistakes a first-week guess
+  // for a tracked bus.
+  const sample = ctx && routeKey ? etaForStop(routeKey, ctx, stops.length - 1) : null;
+  const rough = sample && sample.source === "default";
+  const subtitle = ctx
+    ? ctx.isLive
+      ? `<span class="stops-eta-note stops-eta-note--live">צפי לפי דיווח חי</span>`
+      : `<span class="stops-eta-note">צפי ליציאת ${esc(ctx.tripTime)}${rough ? " · הערכה ראשונית" : ""}</span>`
+    : "";
+
   return `
     <div class="card-block stops-block-static">
       <div class="card-block-header static">
         <div class="card-block-title">${mapPinSVG} תחנות עצירה</div>
+        ${subtitle}
       </div>
       <div class="stops-list">
         ${stopsHtml}
@@ -339,6 +386,13 @@ function renderRouteCard(route, opts) {
   opts = opts || {};
   const titleOverride = opts.title;
 
+  // Match this card to its trackable route so riders can report on it and so
+  // the stop list can show estimated arrival times.
+  const track = opts.view
+    ? findTrackableByKey(opts.view + "|" + (opts.trackName || route.name))
+    : null;
+  const liveCtx = track ? getLiveContext(track.key, track.times) : null;
+
   let bodyHtml = "";
 
   if (route.departure_times) {
@@ -355,7 +409,10 @@ function renderRouteCard(route, opts) {
   }
 
   if (route.stops && route.stops.length) {
-    bodyHtml += renderStopsCard(route.stops);
+    bodyHtml += renderStopsCard(route.stops, {
+      routeKey: track ? track.key : null,
+      ctx: liveCtx,
+    });
   }
 
   if (route.note) {
@@ -381,6 +438,7 @@ function renderRouteCard(route, opts) {
   const titleHtml = formatRouteTitle(name);
 
   const countdownHtml = renderCountdownBanner(route);
+  const liveHtml = track ? renderLiveStrip(track.key, track) : "";
 
   return `
     <div class="route-card">
@@ -388,6 +446,7 @@ function renderRouteCard(route, opts) {
         <div class="route-card-title">${titleHtml}</div>
       </div>
       ${countdownHtml}
+      ${liveHtml}
       <div class="route-card-body">
         ${bodyHtml}
       </div>
@@ -703,6 +762,13 @@ function renderDepartureBoard() {
 function renderNavButtons() {
   const buttons = [
     {
+      icon: '<span class="material-symbols-rounded">near_me</span>',
+      label: "איפה האוטובוס עכשיו",
+      sub: "מעקב ודיווחי נוסעים",
+      view: "live",
+      btnClass: "nav-btn--live",
+    },
+    {
       icon: railwayIcon,
       label: "רכבת כפר יהושע",
       sub: "",
@@ -780,6 +846,7 @@ function renderHomePage() {
 function renderTopTabs() {
   const tabs = [
     { icon: "home", label: "בית", view: "home" },
+    { icon: "near_me", label: "מעקב חי", view: "live" },
     { icon: "railway", label: "רכבת", view: "train" },
     { icon: "alt_route", label: "צומת", view: "tzomet" },
     { icon: "directions_bus", label: "פנים כנף", view: "internal" },
@@ -811,11 +878,11 @@ function renderRouteContent(view) {
   if (view === "train") {
     const toTrain = DATA.bus_routes[0];
     const fromTrain = DATA.bus_routes[1];
-    html += renderRouteCard(toTrain, { splitReinforcement: true, stopKeyword: "רכבת כפר יהושע" });
-    html += renderRouteCard(fromTrain, { splitReinforcement: true, stopKeyword: "רכבת כפר יהושע" });
+    html += renderRouteCard(toTrain, { view: "train", splitReinforcement: true, stopKeyword: "רכבת כפר יהושע" });
+    html += renderRouteCard(fromTrain, { view: "train", splitReinforcement: true, stopKeyword: "רכבת כפר יהושע" });
   } else if (view === "tzomet") {
     const tzomet = DATA.bus_routes[3];
-    html += renderRouteCard(tzomet, { hideEvening: true, splitReinforcement: true, stopKeyword: "צומת רמת דוד" });
+    html += renderRouteCard(tzomet, { view: "tzomet", hideEvening: true, splitReinforcement: true, stopKeyword: "צומת רמת דוד" });
   } else if (view === "internal") {
     const internal = DATA.bus_routes[2];
     if (internal.note) {
@@ -846,9 +913,11 @@ function renderRouteContent(view) {
           : sub.name.includes("מסלול ב")
             ? "גף טיסה 105"
             : null;
-        html += renderRouteCard(sub, { stopKeyword, splitReinforcement: true });
+        html += renderRouteCard(sub, { view: "internal", stopKeyword, splitReinforcement: true });
       });
     }
+  } else if (view === "live") {
+    html += renderLiveContent();
   } else if (view === "hada") {
     html += renderHadaContent();
   } else if (view === "oncall") {
@@ -875,6 +944,639 @@ function getRouteLinesByStop(keyword) {
     });
 }
 
+// ═══════════════════════════════════════════
+// LIVE TRACKING — rider reports & arrival estimates
+// ═══════════════════════════════════════════
+// Riders report the stop they boarded at; everyone else gets to see where the
+// bus is and when it should reach them. Estimates come from src/lib/liveEta.js,
+// which learns each route's real pace from the last week of reports.
+
+const LIVE_STATE = {
+  model: null,
+  live: [],
+  // Reports this device just sent. The API caches its response for a few
+  // seconds, so without these a rider's own report would blink out of the UI
+  // on the next poll and look like it was lost.
+  pending: [],
+  trips: [],
+  totals: { week: 0, today: 0 },
+  loaded: false,
+  failed: false,
+  fetchedAt: 0,
+};
+
+// Anonymous per-device id. It never leaves the device except as this opaque
+// string, and it exists only so the API can rate-limit and de-duplicate.
+function getClientId() {
+  try {
+    let id = localStorage.getItem("shuttle_client_id");
+    if (!id) {
+      id =
+        typeof crypto !== "undefined" && crypto.randomUUID
+          ? crypto.randomUUID()
+          : "c" + Math.random().toString(36).slice(2) + Date.now().toString(36);
+      localStorage.setItem("shuttle_client_id", id);
+    }
+    return id;
+  } catch (e) {
+    // Private mode with storage blocked: a per-tab id still works.
+    if (!window.__shuttleClientId) {
+      window.__shuttleClientId = "tmp" + Math.random().toString(36).slice(2);
+    }
+    return window.__shuttleClientId;
+  }
+}
+
+function nowMinutesOfDay() {
+  const now = new Date();
+  return now.getHours() * 60 + now.getMinutes();
+}
+
+function recomputeActiveTrips() {
+  const now = Date.now();
+  const age = (r) => r.ageMinutes + (now - (r.receivedAt || now)) / 60000;
+
+  // Drop a pending report once the server echoes it back, or once it is old
+  // enough that it no longer matters either way.
+  LIVE_STATE.pending = LIVE_STATE.pending.filter((pending) => {
+    if (age(pending) > 10) return false;
+    return !LIVE_STATE.live.some(
+      (r) =>
+        r.routeKey === pending.routeKey &&
+        r.tripTime === pending.tripTime &&
+        r.stopIndex === pending.stopIndex,
+    );
+  });
+
+  const aged = [...LIVE_STATE.live, ...LIVE_STATE.pending].map((r) => ({
+    ...r,
+    ageMinutes: age(r),
+  }));
+  LIVE_STATE.trips = activeTrips(aged, nowMinutesOfDay());
+}
+
+async function loadLiveData(opts) {
+  const options = opts || {};
+  try {
+    const res = await fetch("/api/reports", { cache: "no-store" });
+    if (!res.ok) throw new Error("API returned " + res.status);
+    const payload = await res.json();
+    const receivedAt = Date.now();
+    LIVE_STATE.model = payload.model || null;
+    LIVE_STATE.live = (Array.isArray(payload.live) ? payload.live : []).map((r) => ({
+      ...r,
+      receivedAt,
+    }));
+    LIVE_STATE.totals = payload.totals || { week: 0, today: 0 };
+    LIVE_STATE.loaded = true;
+    LIVE_STATE.failed = false;
+  } catch (e) {
+    // The schedule is the product; live reports are a bonus. A failure here
+    // must never take the timetable down with it.
+    console.warn("Live reports unavailable", e);
+    LIVE_STATE.failed = true;
+    LIVE_STATE.loaded = true;
+  }
+  LIVE_STATE.fetchedAt = Date.now();
+  recomputeActiveTrips();
+  // The info tab shows no live data, so leave it alone entirely.
+  if (options.rerender !== false && currentView !== "info") {
+    renderCurrentView({ preserveScroll: true });
+  }
+}
+
+// ─── Which routes can be reported on ───
+// One entry per card the user actually sees, so a report always names a route
+// the rest of the app can match it back to.
+let trackableCache = null;
+
+// The registry is rebuilt from DATA/OLD_ROUTES, and every card on screen asks
+// for it — memoise it and clear it whenever the underlying data changes.
+function invalidateTrackableRoutes() {
+  trackableCache = null;
+}
+
+function getTrackableRoutes() {
+  if (trackableCache) return trackableCache;
+  const routes = [];
+
+  const push = (id, view, name, stops, times) => {
+    const cleanTimes = Array.from(
+      new Set((times || []).map((t) => String(t).trim()).filter((t) => /^\d{1,2}:\d{2}$/.test(t))),
+    ).sort((a, b) => timeToMins(a) - timeToMins(b));
+    if (!stops || stops.length === 0 || cleanTimes.length === 0) return;
+    routes.push({
+      id,
+      view,
+      name,
+      // The key is what lands in the database — keep it stable and readable.
+      key: view + "|" + name,
+      stops,
+      times: cleanTimes,
+    });
+  };
+
+  const busRoutes = DATA.bus_routes || [];
+  if (busRoutes[0]) {
+    push("train-0", "train", busRoutes[0].name, busRoutes[0].stops, getAllDepartureTimes(busRoutes[0]));
+  }
+  if (busRoutes[1]) {
+    push("train-1", "train", busRoutes[1].name, busRoutes[1].stops, getAllDepartureTimes(busRoutes[1]));
+  }
+  if (busRoutes[3]) {
+    push("tzomet-0", "tzomet", busRoutes[3].name, busRoutes[3].stops, getAllDepartureTimes(busRoutes[3]));
+  }
+  if (busRoutes[2] && busRoutes[2].sub_routes) {
+    busRoutes[2].sub_routes.forEach((sub, i) => {
+      push("internal-" + i, "internal", sub.name, sub.stops, getAllDepartureTimes(sub));
+    });
+  }
+
+  const hadaGroups = getHadaTrips();
+  const hadaCards = [
+    ...buildHadaCards("מסלול א׳", hadaGroups["109"]),
+    ...buildHadaCards("מסלול ב׳", hadaGroups["105"]),
+    ...buildHadaCards("מסלול תחזוקה", hadaGroups.maintenance),
+  ];
+  hadaCards.forEach((card, i) => {
+    push("hada-" + i, "hada", 'חד"א · ' + card.title, card.stops, card.times);
+  });
+
+  trackableCache = routes;
+  return routes;
+}
+
+function timeToMins(t) {
+  const m = String(t).match(/^(\d{1,2}):(\d{2})$/);
+  return m ? parseInt(m[1], 10) * 60 + parseInt(m[2], 10) : 9999;
+}
+
+function findTrackableById(id) {
+  return getTrackableRoutes().find((r) => r.id === id) || null;
+}
+
+function findTrackableByKey(key) {
+  return getTrackableRoutes().find((r) => r.key === key) || null;
+}
+
+// ─── What to show for a route right now ───
+// A reported bus wins; otherwise fall back to the next scheduled departure and
+// the learned averages, so a stop still gets a time when nobody has reported.
+function getLiveContext(routeKey, times) {
+  const live = activeTripForRoute(LIVE_STATE.trips, routeKey);
+  if (live) return { trip: live, tripTime: live.tripTime, isLive: true };
+
+  const nowMins = nowMinutesOfDay();
+  const next = (times || [])
+    .map((t) => ({ time: t, mins: timeToMins(t) }))
+    .filter((t) => t.mins >= nowMins && t.mins - nowMins <= 120)
+    .sort((a, b) => a.mins - b.mins)[0];
+  if (!next) return null;
+  return { trip: null, tripTime: next.time, isLive: false };
+}
+
+function etaForStop(routeKey, ctx, stopIndex) {
+  if (!ctx || !ctx.tripTime) return null;
+  return estimateArrival(LIVE_STATE.model, {
+    routeKey,
+    tripTime: ctx.tripTime,
+    stopIndex,
+    liveReport: ctx.trip,
+    nowMinutes: nowMinutesOfDay(),
+  });
+}
+
+function formatRelativeMinutes(mins) {
+  if (mins === null || mins === undefined) return "";
+  if (mins <= -2) return "אמור לחלוף";
+  if (mins <= 0) return "עכשיו";
+  if (mins === 1) return "בעוד דקה";
+  if (mins < 60) return "בעוד " + mins + " דק׳";
+  const hours = Math.floor(mins / 60);
+  const rest = mins % 60;
+  return rest === 0 ? "בעוד " + hours + " שע׳" : "בעוד " + hours + " שע׳ ו" + rest + " דק׳";
+}
+
+function formatAgo(mins) {
+  const m = Math.max(0, Math.round(mins));
+  if (m === 0) return "ממש עכשיו";
+  if (m === 1) return "לפני דקה";
+  return "לפני " + m + " דק׳";
+}
+
+function confidenceLabel(confidence) {
+  if (confidence === "high") return "דיוק גבוה";
+  if (confidence === "medium") return "דיוק בינוני";
+  if (confidence === "low") return "דיוק נמוך";
+  return "הערכה ראשונית";
+}
+
+// The stops a rider still cares about: everything ahead of where the bus was
+// last seen, minus the ones it should already have cleared.
+function upcomingStopRows(route, ctx, limit) {
+  const seenIndex = ctx && ctx.trip ? ctx.trip.stopIndex : -1;
+  const ahead = route.stops
+    .map((stop, i) => ({ stop, i }))
+    .filter((s) => s.i > seenIndex)
+    .map((s) => ({ ...s, eta: etaForStop(route.key, ctx, s.i) }))
+    .filter((s) => s.eta);
+
+  const stillComing = ahead.filter((s) => s.eta.inMinutes >= -1);
+  // If every estimate is already in the past the bus is late, not finished —
+  // keep showing the stops rather than an empty list.
+  const rows = stillComing.length > 0 ? stillComing : ahead;
+  return limit ? rows.slice(0, limit) : rows;
+}
+
+function renderEtaRows(rows) {
+  return rows
+    .map(
+      (s) => `<div class="live-eta-row">
+        <span class="live-eta-stop">${esc(s.stop)}</span>
+        <span class="live-eta-time">${esc(s.eta.time)}</span>
+        <span class="live-eta-rel">${esc(formatRelativeMinutes(s.eta.inMinutes))}</span>
+      </div>`,
+    )
+    .join("");
+}
+
+// ─── Live strip on a route card ───
+function renderLiveStrip(routeKey, route) {
+  if (!routeKey || !route) return "";
+  const trackId = route.id;
+  const reportBtn = `<button type="button" class="live-report-btn" onclick="openReportModal('${trackId}')">
+      <span class="material-symbols-rounded">campaign</span>
+      דיווח: אני על הקו
+    </button>`;
+
+  const ctx = getLiveContext(routeKey, route.times);
+  if (!ctx || !ctx.isLive) {
+    return `<div class="live-strip live-strip--idle">
+      <div class="live-strip-main">
+        <span class="live-strip-icon material-symbols-rounded">radar</span>
+        <div class="live-strip-text">
+          <span class="live-strip-title">אין דיווח חי על הקו הזה</span>
+          <span class="live-strip-sub">אם את.ה על האוטובוס — דווח.י ותעזור.י לכולם לדעת איפה הוא</span>
+        </div>
+      </div>
+      ${reportBtn}
+    </div>`;
+  }
+
+  const trip = ctx.trip;
+  const remaining = renderEtaRows(upcomingStopRows(route, ctx, 3));
+
+  const delayNote =
+    trip && LIVE_STATE.model
+      ? (() => {
+          const eta = etaForStop(routeKey, ctx, trip.stopIndex + 1);
+          if (!eta) return "";
+          const d = Math.round(eta.delay);
+          if (d >= 3) return `<span class="live-delay live-delay--late">מאחר בכ־${d} דק׳</span>`;
+          if (d <= -3) return `<span class="live-delay live-delay--early">מקדים בכ־${Math.abs(d)} דק׳</span>`;
+          return `<span class="live-delay live-delay--ontime">בזמן</span>`;
+        })()
+      : "";
+
+  const reporters =
+    trip.reports > 1 ? `<span class="live-reporters">${trip.reports} דיווחים</span>` : "";
+
+  return `<div class="live-strip live-strip--active">
+    <div class="live-strip-main">
+      <span class="live-dot live-dot--pulse"></span>
+      <div class="live-strip-text">
+        <span class="live-strip-title">האוטובוס של ${esc(trip.tripTime)} נצפה ב${esc(trip.stopName)}</span>
+        <span class="live-strip-sub">${esc(formatAgo(trip.ageMinutes))} ${delayNote ? "· " : ""}${delayNote} ${reporters}</span>
+      </div>
+    </div>
+    ${remaining ? `<div class="live-eta-list">${remaining}</div>` : ""}
+    ${reportBtn}
+  </div>`;
+}
+
+// ─── Report modal ───
+// Three taps: which line, which departure, which stop. Defaults are guessed
+// from the clock so the common case is usually a single confirm.
+const reportDraft = { trackId: null, tripTime: null, stopIndex: null, sending: false };
+
+function openReportModal(trackId) {
+  const routes = getTrackableRoutes();
+  if (routes.length === 0) return;
+  const route = trackId ? findTrackableById(trackId) : null;
+
+  reportDraft.trackId = route ? route.id : null;
+  reportDraft.tripTime = null;
+  reportDraft.stopIndex = null;
+  reportDraft.sending = false;
+
+  if (route) autofillReportDraft(route);
+
+  let overlay = document.getElementById("report-modal-overlay");
+  if (!overlay) {
+    overlay = document.createElement("div");
+    overlay.id = "report-modal-overlay";
+    overlay.className = "report-overlay";
+    document.body.appendChild(overlay);
+    overlay.addEventListener("click", (e) => {
+      if (e.target === overlay) closeReportModal();
+    });
+  }
+  document.body.classList.add("report-modal-open");
+  renderReportModal();
+}
+
+// Pick the departure that is most likely the one they are sitting on: the last
+// one that has already left within the hour, else the next one out.
+function autofillReportDraft(route) {
+  const nowMins = nowMinutesOfDay();
+  const withMins = route.times.map((t) => ({ time: t, mins: timeToMins(t) }));
+  const justLeft = withMins
+    .filter((t) => t.mins <= nowMins && nowMins - t.mins <= 60)
+    .sort((a, b) => b.mins - a.mins)[0];
+  const next = withMins.filter((t) => t.mins > nowMins).sort((a, b) => a.mins - b.mins)[0];
+  const pick = justLeft || next;
+  if (pick) reportDraft.tripTime = pick.time;
+}
+
+function closeReportModal() {
+  const overlay = document.getElementById("report-modal-overlay");
+  if (!overlay) return;
+  document.body.classList.remove("report-modal-open");
+  overlay.remove();
+}
+
+function clearReportRoute() {
+  reportDraft.trackId = null;
+  reportDraft.tripTime = null;
+  reportDraft.stopIndex = null;
+  renderReportModal();
+}
+
+function selectReportRoute(trackId) {
+  const route = findTrackableById(trackId);
+  if (!route) return;
+  reportDraft.trackId = trackId;
+  reportDraft.tripTime = null;
+  reportDraft.stopIndex = null;
+  autofillReportDraft(route);
+  renderReportModal();
+}
+
+function selectReportTrip(time) {
+  reportDraft.tripTime = time;
+  renderReportModal();
+}
+
+function selectReportStop(index) {
+  reportDraft.stopIndex = Number(index);
+  renderReportModal();
+}
+
+function renderReportModal() {
+  const overlay = document.getElementById("report-modal-overlay");
+  if (!overlay) return;
+
+  const routes = getTrackableRoutes();
+  const route = reportDraft.trackId ? findTrackableById(reportDraft.trackId) : null;
+
+  const routeStep = route
+    ? `<div class="report-chosen">
+        <div class="report-chosen-text">
+          <span class="report-chosen-label">הקו שדיווחת עליו</span>
+          <span class="report-chosen-value">${esc(route.name)}</span>
+        </div>
+        <button type="button" class="report-change-btn" onclick="clearReportRoute()">החלפה</button>
+      </div>`
+    : `<div class="report-step">
+        <div class="report-step-title"><span class="report-step-num">1</span>באיזה קו את.ה נוסע.ת?</div>
+        <div class="report-options report-options--routes">
+          ${routes
+            .map(
+              (r) =>
+                `<button type="button" class="report-option report-option--route" onclick="selectReportRoute('${r.id}')">${esc(r.name)}</button>`,
+            )
+            .join("")}
+        </div>
+      </div>`;
+
+  let tripStep = "";
+  let stopStep = "";
+
+  if (route) {
+    tripStep = `<div class="report-step">
+      <div class="report-step-title"><span class="report-step-num">2</span>באיזו יציאה?</div>
+      <div class="report-options">
+        ${route.times
+          .map((t) => {
+            const active = t === reportDraft.tripTime ? " report-option--active" : "";
+            return `<button type="button" class="report-option report-option--time${active}" onclick="selectReportTrip('${esc(t)}')">${esc(t)}</button>`;
+          })
+          .join("")}
+      </div>
+    </div>`;
+
+    stopStep = `<div class="report-step">
+      <div class="report-step-title"><span class="report-step-num">3</span>באיזו תחנה עלית?</div>
+      <div class="report-options report-options--stops">
+        ${route.stops
+          .map((stop, i) => {
+            const active = i === reportDraft.stopIndex ? " report-option--active" : "";
+            return `<button type="button" class="report-option report-option--stop${active}" onclick="selectReportStop(${i})">
+              <span class="report-stop-num">${i + 1}</span>${esc(stop)}
+            </button>`;
+          })
+          .join("")}
+      </div>
+    </div>`;
+  }
+
+  const ready = !!(route && reportDraft.tripTime && reportDraft.stopIndex !== null);
+  const submitLabel = reportDraft.sending ? "שולח..." : "שליחת דיווח";
+
+  overlay.innerHTML = `
+    <div class="report-modal" role="dialog" aria-modal="true" aria-labelledby="report-title">
+      <div class="report-modal-head">
+        <div>
+          <h2 id="report-title" class="report-title">דיווח על האוטובוס</h2>
+          <p class="report-subtitle">הדיווח מראה לכולם איפה האוטובוס נמצא, ומשפר את זמני ההגעה המשוערים</p>
+        </div>
+        <button type="button" class="report-close" onclick="closeReportModal()" aria-label="סגירה">&times;</button>
+      </div>
+      <div class="report-modal-body">
+        ${routeStep}
+        ${tripStep}
+        ${stopStep}
+      </div>
+      <div class="report-modal-foot">
+        <button type="button" class="report-submit" ${ready && !reportDraft.sending ? "" : "disabled"} onclick="submitReport()">
+          ${submitLabel}
+        </button>
+        <p class="report-privacy">הדיווח אנונימי. דיווחים נשמרים שבוע אחורה ואז נמחקים.</p>
+      </div>
+    </div>`;
+}
+
+async function submitReport() {
+  const route = findTrackableById(reportDraft.trackId);
+  if (!route || !reportDraft.tripTime || reportDraft.stopIndex === null) return;
+  if (reportDraft.sending) return;
+
+  reportDraft.sending = true;
+  renderReportModal();
+
+  try {
+    const res = await fetch("/api/reports", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        routeKey: route.key,
+        tripTime: reportDraft.tripTime,
+        stopName: route.stops[reportDraft.stopIndex],
+        stopIndex: reportDraft.stopIndex,
+        clientId: getClientId(),
+      }),
+    });
+
+    if (res.status === 429) {
+      const payload = await res.json().catch(() => ({}));
+      const wait = payload.retryAfterSeconds;
+      showToast(
+        wait ? `רגע אחד — אפשר לדווח שוב בעוד ${wait} שניות` : "הגעת למכסת הדיווחים להיום",
+        "warn",
+      );
+      reportDraft.sending = false;
+      renderReportModal();
+      return;
+    }
+    if (!res.ok) throw new Error("API returned " + res.status);
+
+    closeReportModal();
+    showToast("תודה! הדיווח נקלט", "ok");
+    // Show the rider their own report immediately instead of waiting for the
+    // next poll — the API's shared cache can lag a few seconds behind.
+    LIVE_STATE.pending.push({
+      routeKey: route.key,
+      tripTime: reportDraft.tripTime,
+      stopName: route.stops[reportDraft.stopIndex],
+      stopIndex: reportDraft.stopIndex,
+      ageMinutes: 0,
+      receivedAt: Date.now(),
+    });
+    recomputeActiveTrips();
+    renderCurrentView({ preserveScroll: true });
+    setTimeout(() => loadLiveData(), 3000);
+  } catch (e) {
+    console.error("Report failed", e);
+    showToast("שליחת הדיווח נכשלה. נסו שוב", "error");
+    reportDraft.sending = false;
+    renderReportModal();
+  }
+}
+
+function showToast(message, kind) {
+  const existing = document.getElementById("shuttle-toast");
+  if (existing) existing.remove();
+  const toast = document.createElement("div");
+  toast.id = "shuttle-toast";
+  toast.className = "shuttle-toast shuttle-toast--" + (kind || "ok");
+  toast.textContent = message;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.classList.add("shuttle-toast--out"), 2600);
+  setTimeout(() => toast.remove(), 3000);
+}
+
+// ─── Live view ───
+function renderLiveContent() {
+  const routes = getTrackableRoutes();
+  const byKey = new Map(routes.map((r) => [r.key, r]));
+  const trips = LIVE_STATE.trips.filter((t) => byKey.has(t.routeKey));
+
+  let html = `<div class="live-intro">
+    <div class="live-intro-head">
+      <span class="material-symbols-rounded live-intro-icon">near_me</span>
+      <div>
+        <h2 class="live-intro-title">איפה האוטובוס עכשיו</h2>
+        <p class="live-intro-sub">הנתונים כאן מגיעים מנוסעים שדיווחו מאיזו תחנה הם עלו. ככל שיש יותר דיווחים, זמני ההגעה מדויקים יותר.</p>
+      </div>
+    </div>
+    <button type="button" class="live-cta" onclick="openReportModal(null)">
+      <span class="material-symbols-rounded">campaign</span>
+      דיווח על נסיעה
+    </button>
+  </div>`;
+
+  if (LIVE_STATE.failed) {
+    html += `<div class="route-note">${infoSVG} לא הצלחנו לטעון דיווחים כרגע. לוחות הזמנים למטה עדיין מעודכנים.</div>`;
+    return html;
+  }
+
+  if (!LIVE_STATE.loaded) {
+    html += `<div class="live-empty">טוען דיווחים...</div>`;
+    return html;
+  }
+
+  if (trips.length === 0) {
+    html += `<div class="live-empty">
+      <span class="material-symbols-rounded live-empty-icon">radar</span>
+      <p class="live-empty-title">אין כרגע אוטובוס מדווח</p>
+      <p class="live-empty-sub">הדיווח הראשון של היום הוא שלך — לוקח שתי לחיצות.</p>
+    </div>`;
+  }
+
+  trips.forEach((trip) => {
+    const route = byKey.get(trip.routeKey);
+    const ctx = { trip, tripTime: trip.tripTime, isLive: true };
+    const upcoming = upcomingStopRows(route, ctx, 6);
+    const rows = renderEtaRows(upcoming);
+    const confidence = upcoming.length ? confidenceLabel(upcoming[0].eta.confidence) : "";
+
+    html += `<div class="route-card live-card">
+      <div class="route-card-header">
+        <div class="route-card-title">${formatRouteTitle(route.name)}</div>
+      </div>
+      <div class="live-card-status">
+        <span class="live-dot live-dot--pulse"></span>
+        <div class="live-card-status-text">
+          <span class="live-strip-title">יציאת ${esc(trip.tripTime)} · נצפה ב${esc(trip.stopName)}</span>
+          <span class="live-strip-sub">${esc(formatAgo(trip.ageMinutes))}${trip.reports > 1 ? " · " + trip.reports + " דיווחים" : ""}${confidence ? " · " + confidence : ""}</span>
+        </div>
+      </div>
+      <div class="route-card-body">
+        ${
+          rows
+            ? `<div class="card-block times-block-compact">
+                <div class="card-block-header static">
+                  <div class="card-block-title">${clockSVG} צפי הגעה לתחנות הבאות</div>
+                </div>
+                <div class="live-eta-list">${rows}</div>
+              </div>`
+            : `<div class="route-note">${infoSVG} האוטובוס בתחנה האחרונה במסלול.</div>`
+        }
+        <button type="button" class="live-report-btn live-report-btn--wide" onclick="openReportModal('${route.id}')">
+          <span class="material-symbols-rounded">campaign</span>
+          גם אני על הקו הזה
+        </button>
+      </div>
+    </div>`;
+  });
+
+  const totals = LIVE_STATE.totals || { week: 0, today: 0 };
+  html += `<div class="live-footnote">
+    ${infoSVG}
+    <span>${totals.today} דיווחים היום · ${totals.week} בשבוע האחרון. הזמנים משוערים ומבוססים על דיווחי נוסעים — לא על מיקום האוטובוס בפועל.</span>
+  </div>`;
+
+  return html;
+}
+
+window.openReportModal = openReportModal;
+window.closeReportModal = closeReportModal;
+window.selectReportRoute = selectReportRoute;
+window.clearReportRoute = clearReportRoute;
+window.selectReportTrip = selectReportTrip;
+window.selectReportStop = selectReportStop;
+window.submitReport = submitReport;
+
 // ─── Navigate To ───
 function navigateTo(view, opts) {
   opts = opts || {};
@@ -900,7 +1602,10 @@ window.addEventListener("popstate", () => {
 window.navigateTo = navigateTo;
 
 // ─── Render Current View (master renderer) ───
-function renderCurrentView() {
+// `opts.preserveScroll` keeps the reader where they are. Background refreshes
+// (new rider reports arriving) use it; a tab change still jumps to the top.
+function renderCurrentView(opts) {
+  const preserveScroll = !!(opts && opts.preserveScroll);
   const container = document.getElementById("app-content");
   const nav = document.getElementById("main-nav");
 
@@ -909,7 +1614,7 @@ function renderCurrentView() {
   if (currentView === "home") {
     container.parentElement.classList.add("content-home");
     container.innerHTML = renderHomePage();
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    if (!preserveScroll) window.scrollTo({ top: 0, behavior: "smooth" });
   } else {
     container.parentElement.classList.remove("content-home");
     container.innerHTML = renderRouteContent(currentView);
@@ -940,7 +1645,7 @@ function renderCurrentView() {
           }
         }
       });
-    } else {
+    } else if (!preserveScroll) {
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
   }
@@ -1113,7 +1818,14 @@ function renderHadaRouteCard(title, times, stops) {
   const upcoming = getUpcomingFromTimes(times);
   const countdown = renderCountdownFromUpcoming(upcoming);
   const timesHtml = renderDepartureTimesStr(times.join("-"));
-  const stopsHtml = renderStopsCard(stops);
+
+  const track = findTrackableByKey('hada|חד"א · ' + title);
+  const liveCtx = track ? getLiveContext(track.key, track.times) : null;
+  const stopsHtml = renderStopsCard(stops, {
+    routeKey: track ? track.key : null,
+    ctx: liveCtx,
+  });
+  const liveHtml = track ? renderLiveStrip(track.key, track) : "";
 
   return `
     <div class="route-card">
@@ -1121,6 +1833,7 @@ function renderHadaRouteCard(title, times, stops) {
         <div class="route-card-title">${formatRouteTitle(title)}</div>
       </div>
       ${countdown}
+      ${liveHtml}
       <div class="route-card-body">
         ${timesHtml}
         ${stopsHtml}
@@ -1307,10 +2020,27 @@ function attachOldRouteTabListeners() {
 
 // ─── Countdown Timer ───
 let countdownTimer = null;
+let liveTimer = null;
+
+// How often we ask the server for new rider reports while the app is open.
+const LIVE_POLL_MS = 45000;
+
+let trackableDay = new Date().getDay();
 
 function refreshContent() {
   if (currentView === "info") return;
-  renderCurrentView();
+  // Departure lists depend on the day (קו 5 runs Sun/Thu only), so a session
+  // left open overnight needs the registry rebuilt.
+  const today = new Date().getDay();
+  if (today !== trackableDay) {
+    trackableDay = today;
+    invalidateTrackableRoutes();
+  }
+  recomputeActiveTrips();
+  // A timer tick is a refresh, not a navigation — re-render in place so a
+  // reader following the countdown or the live arrival list isn't scrolled
+  // back to the top of the page every minute.
+  renderCurrentView({ preserveScroll: true });
 }
 
 function startCountdownTimer() {
@@ -1331,12 +2061,29 @@ function stopCountdownTimer() {
   }
 }
 
+function startLivePolling() {
+  stopLivePolling();
+  liveTimer = setInterval(() => loadLiveData(), LIVE_POLL_MS);
+}
+
+function stopLivePolling() {
+  if (liveTimer) {
+    clearInterval(liveTimer);
+    liveTimer = null;
+  }
+}
+
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible") {
+    recomputeActiveTrips();
     renderCurrentView();
     startCountdownTimer();
+    // Coming back to a backgrounded tab: reports may be minutes stale.
+    if (Date.now() - LIVE_STATE.fetchedAt > LIVE_POLL_MS) loadLiveData();
+    startLivePolling();
   } else {
     stopCountdownTimer();
+    stopLivePolling();
   }
 });
 
@@ -1380,12 +2127,17 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
   // Keep the destination tabs (רכבת / צומת) in sync with the line tables
   syncDestinationsFromLines();
+  // Routes may have just been replaced by the DB payload.
+  invalidateTrackableRoutes();
   // Set the hash to reflect the initial view
   if (!window.location.hash) {
     history.replaceState(null, "", "#home");
   }
   renderCurrentView();
   startCountdownTimer();
+  // Reports load in the background — the schedule never waits on them.
+  loadLiveData();
+  startLivePolling();
   maybeShowInstallPrompt();
 });
 

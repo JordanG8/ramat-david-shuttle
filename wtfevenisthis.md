@@ -56,9 +56,53 @@ Clicking a קו link in the badge calls `navigateTo('info', { activeKav: 'kav2' 
 
 ---
 
+## Live tracking (rider reports)
+
+Riders tap "דיווח: אני על הקו", pick the departure and the stop they boarded
+at, and everyone else sees where that bus is and when it should reach them.
+There is no GPS and no login — the whole feature runs on those reports.
+
+- `api/reports.js` — `GET` returns the learned model + still-fresh sightings,
+  `POST` takes one report. Anonymous, but rate-limited per device id
+  (40s between reports, 40/day) and de-duplicated within 15 minutes.
+- `src/lib/liveEta.js` — the algorithm, pure functions, imported by **both**
+  the API and `app.js`. Keep it dependency-free so both can use it.
+- Table `shuttle_reports`, created lazily by the API (and by `api/init.js`).
+  **One week of backlog**: every insert prunes rows older than 7 days.
+
+### How the estimates work
+
+Each report gives one data point: at `stopIndex` on route `routeKey`, the bus
+was there `observed - scheduled` minutes after its scheduled departure. Per
+route and stop we take a **recency-weighted median** of that offset (half-life
+3 days), which ignores the rider who reports ten minutes after boarding. A
+weighted least-squares line over the per-stop medians fills in stops nobody has
+reported yet, and a stop's own median is blended toward that line until it has
+enough samples to stand alone.
+
+With a live sighting we also know how late *today's* bus is: `delay = observed -
+(scheduled + learned offset at that stop)`, capped at −20/+60 min and applied to
+every stop ahead of it. Without one, the next scheduled departure plus the
+learned offsets still produces a per-stop estimate — labelled "הערכה ראשונית"
+while a route has no reports at all, so a guess never looks like a tracked bus.
+
+Times of day are derived **in Postgres** with `AT TIME ZONE 'Asia/Jerusalem'`,
+so a phone with a wrong clock or timezone can't poison the model.
+
+### Route keys
+
+A report names its route as `view|route name` (e.g.
+`train|רחבת היסעים - רכבת כפר יהושע`). `getTrackableRoutes()` in `app.js` builds
+that list from the same data the cards render from, so report, card and ETA all
+agree. Renaming a route in the admin panel starts a fresh key — old reports for
+it simply age out within the week.
+
+---
+
 ## Database
 
-Single Neon Postgres DB. Table: `app_settings`. One row:
+Single Neon Postgres DB. Tables: `app_settings`, `app_data_versions`,
+`shuttle_reports`. `app_settings` has one row:
 - `key = 'app_data'` → giant JSON blob with `units`, `bus_routes`, `old_routes`, `legend`
 
 Credentials are in `.env.local` (never committed). To query directly:
@@ -78,8 +122,10 @@ There's also `update_db.js` — runs from a `payload.json` file to push data dir
 Vanilla JS SPA. Entry: `index.html` → `app.js`. Build tool: Vite.
 - `app.js` — all rendering + logic
 - `src/data/fallbackData.js` — used if DB fetch fails (keep in sync with DB!)
+- `src/lib/liveEta.js` — arrival-estimate algorithm (shared with the API)
 - `src/styles/styles.css` — all styles
 - `api/data.js` — Vercel serverless: GET reads DB, POST writes (JWT auth)
+- `api/reports.js` — Vercel serverless: rider reports + ETA model (no auth)
 - `admin.html` / `admin.js` — admin panel (same DB)
 
 There's also a **Next.js v2** in `next-app/` subdirectory — ignore if you're touching the v1 files at root.

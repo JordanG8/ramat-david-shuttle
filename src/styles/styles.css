@@ -2454,3 +2454,656 @@ body.install-modal-open {
     font-size: 13.5px;
   }
 }
+
+/* ═══════════════════════════════════════════
+   LIVE TRACKING — rider reports & arrival ETAs
+   ═══════════════════════════════════════════ */
+
+.nav-btn--live {
+  background: #ad1457;
+  border-color: #c2185b;
+}
+
+.nav-btn--live:hover {
+  background: #c2185b;
+}
+
+/* ─── Live strip on a route card ─── */
+.live-strip {
+  margin: 0 var(--space-md) var(--space-md);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.live-strip--idle {
+  background: var(--gray-50);
+  border: 1px dashed var(--border);
+}
+
+.live-strip--active {
+  background: #e8f5e9;
+  border: 1px solid var(--station-green-border);
+}
+
+.live-strip-main {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+}
+
+.live-strip-icon {
+  font-size: 20px;
+  color: var(--olive-400);
+  flex-shrink: 0;
+}
+
+.live-strip-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.live-strip-title {
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--gray-900);
+  line-height: 1.35;
+}
+
+.live-strip-sub {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.live-dot--pulse {
+  background: var(--station-green);
+  box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.18);
+  margin-top: 5px;
+}
+
+.live-delay {
+  font-weight: 700;
+}
+
+.live-delay--late {
+  color: #c62828;
+}
+
+.live-delay--early {
+  color: #1565c0;
+}
+
+.live-delay--ontime {
+  color: var(--station-green);
+}
+
+.live-reporters {
+  color: var(--olive-500);
+}
+
+/* ─── Estimated arrival rows ─── */
+.live-eta-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+  padding: var(--space-sm);
+}
+
+.live-eta-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-size: 0.8rem;
+  padding: 3px 0;
+}
+
+.live-eta-row + .live-eta-row {
+  border-top: 1px solid var(--gray-100);
+}
+
+.live-eta-stop {
+  flex: 1;
+  min-width: 0;
+  color: var(--gray-700);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.live-eta-time {
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--olive-700);
+  font-variant-numeric: tabular-nums;
+}
+
+.live-eta-rel {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  min-width: 76px;
+  text-align: left;
+}
+
+/* ─── Report button ─── */
+.live-report-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  width: 100%;
+  padding: 9px var(--space-md);
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--olive-700);
+  color: #fff;
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.live-report-btn:hover {
+  background: var(--olive-600);
+}
+
+.live-report-btn .material-symbols-rounded {
+  font-size: 18px;
+}
+
+.live-report-btn--wide {
+  margin-top: var(--space-sm);
+}
+
+/* ─── Per-stop estimates in the stops list ─── */
+.stop-name {
+  flex: 1;
+  min-width: 0;
+}
+
+.stop-eta {
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--olive-500);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+.stop-eta--live {
+  color: var(--station-green);
+}
+
+.stop-item--passed {
+  opacity: 0.45;
+}
+
+.stop-item--here {
+  background: var(--station-green-bg);
+  border-radius: var(--radius-sm);
+  padding: 4px var(--space-sm);
+  margin: 2px -4px;
+}
+
+.stop-here {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #fff;
+  background: var(--station-green);
+  border-radius: 999px;
+  padding: 2px 8px;
+  flex-shrink: 0;
+}
+
+.stops-eta-note {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--gray-100);
+  border-radius: 999px;
+  padding: 2px 8px;
+}
+
+.stops-eta-note--live {
+  color: var(--station-green);
+  background: var(--station-green-bg);
+}
+
+/* ─── Live view ─── */
+.live-intro {
+  background: var(--olive-700);
+  color: #fff;
+  border-radius: var(--radius-lg);
+  padding: var(--space-md);
+  margin-bottom: var(--space-md);
+}
+
+.live-intro-head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+}
+
+.live-intro-icon {
+  font-size: 26px;
+  flex-shrink: 0;
+}
+
+.live-intro-title {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 900;
+}
+
+.live-intro-sub {
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--olive-100);
+  margin-top: 2px;
+}
+
+.live-cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  width: 100%;
+  margin-top: var(--space-md);
+  padding: 11px var(--space-md);
+  border: none;
+  border-radius: var(--radius-md);
+  background: #fff;
+  color: var(--olive-700);
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.live-cta:hover {
+  background: var(--olive-50);
+}
+
+.live-card-status {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  background: #e8f5e9;
+  border-bottom: 1px solid var(--station-green-border);
+}
+
+.live-card-status-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.live-empty {
+  background: var(--surface);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg) var(--space-md);
+  text-align: center;
+  margin-bottom: var(--space-md);
+}
+
+.live-empty-icon {
+  font-size: 34px;
+  color: var(--olive-300);
+}
+
+.live-empty-title {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--gray-800);
+  margin-top: var(--space-sm);
+}
+
+.live-empty-sub {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.live-footnote {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-xs);
+  font-size: 0.72rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+  padding: var(--space-sm) var(--space-md);
+}
+
+.live-footnote svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+/* ─── Report modal ─── */
+.report-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 22, 40, 0.6);
+  backdrop-filter: blur(3px);
+  z-index: 10000;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: var(--space-md);
+  animation: reportFade 0.18s ease;
+}
+
+@keyframes reportFade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+body.report-modal-open {
+  overflow: hidden;
+}
+
+.report-modal {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  width: 100%;
+  max-width: 480px;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: reportSlide 0.22s ease;
+}
+
+@keyframes reportSlide {
+  from {
+    transform: translateY(24px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.report-modal-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding: var(--space-md);
+  border-bottom: 1px solid var(--border);
+}
+
+.report-title {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 900;
+  color: var(--olive-700);
+}
+
+.report-subtitle {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+  margin-top: 2px;
+}
+
+.report-close {
+  background: none;
+  border: none;
+  font-size: 1.6rem;
+  line-height: 1;
+  color: var(--gray-500);
+  cursor: pointer;
+  padding: 0 4px;
+}
+
+.report-modal-body {
+  padding: var(--space-md);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.report-step-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--gray-800);
+  margin-bottom: var(--space-sm);
+}
+
+.report-step-num {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--olive-700);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.report-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
+.report-options--routes,
+.report-options--stops {
+  flex-direction: column;
+  flex-wrap: nowrap;
+  max-height: 232px;
+  overflow-y: auto;
+}
+
+.report-option {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  color: var(--gray-800);
+  cursor: pointer;
+  text-align: right;
+  transition:
+    background 0.12s ease,
+    border-color 0.12s ease;
+}
+
+.report-option:hover {
+  border-color: var(--olive-400);
+  background: var(--olive-50);
+}
+
+.report-option--time {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  min-width: 62px;
+  text-align: center;
+}
+
+.report-option--stop {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.report-stop-num {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--olive-100);
+  color: var(--olive-700);
+  border-radius: 50%;
+  font-size: 0.68rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.report-option--active {
+  background: var(--olive-700);
+  border-color: var(--olive-700);
+  color: #fff;
+}
+
+.report-option--active .report-stop-num {
+  background: rgba(255, 255, 255, 0.25);
+  color: #fff;
+}
+
+.report-option--active:hover {
+  background: var(--olive-600);
+}
+
+.report-chosen {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  background: var(--olive-50);
+  border: 1px solid var(--olive-100);
+  border-radius: var(--radius-sm);
+  padding: var(--space-sm) var(--space-md);
+}
+
+.report-chosen-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.report-chosen-label {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+}
+
+.report-chosen-value {
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--olive-700);
+}
+
+.report-change-btn {
+  background: none;
+  border: 1px solid var(--olive-300);
+  color: var(--olive-700);
+  border-radius: var(--radius-sm);
+  padding: 5px 10px;
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.report-modal-foot {
+  padding: var(--space-md);
+  border-top: 1px solid var(--border);
+  background: var(--gray-50);
+}
+
+.report-submit {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--station-green);
+  color: #fff;
+  font-family: var(--font-body);
+  font-size: 0.92rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.report-submit:disabled {
+  background: var(--gray-300);
+  color: var(--gray-600);
+  cursor: not-allowed;
+}
+
+.report-privacy {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  text-align: center;
+  margin-top: var(--space-sm);
+}
+
+/* ─── Toast ─── */
+.shuttle-toast {
+  position: fixed;
+  bottom: 84px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10001;
+  padding: 10px 18px;
+  border-radius: 999px;
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #fff;
+  background: var(--gray-900);
+  box-shadow: 0 6px 20px rgba(10, 22, 40, 0.3);
+  transition: opacity 0.3s ease;
+  max-width: calc(100vw - 32px);
+  text-align: center;
+}
+
+.shuttle-toast--ok {
+  background: var(--station-green);
+}
+
+.shuttle-toast--warn {
+  background: #ef6c00;
+}
+
+.shuttle-toast--error {
+  background: var(--accent);
+}
+
+.shuttle-toast--out {
+  opacity: 0;
+}
+
+@media (min-width: 560px) {
+  .report-overlay {
+    align-items: center;
+  }
+}
+
+.stop-eta--rough {
+  color: var(--gray-400);
+  font-weight: 600;
+}
+
+.live-footnote {
+  padding-bottom: var(--space-lg);
+}
