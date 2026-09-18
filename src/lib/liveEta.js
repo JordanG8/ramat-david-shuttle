@@ -34,8 +34,24 @@ export const DEFAULT_PACE_PER_STOP = 1.6;
 const MIN_PACE_PER_STOP = 0.5;
 
 // Offsets outside this band are someone mis-tapping, not a real observation.
-const MIN_VALID_OFFSET = -20;
-const MAX_VALID_OFFSET = 180;
+export const MIN_VALID_OFFSET = -20;
+export const MAX_VALID_OFFSET = 180;
+
+/**
+ * Is this report plausible for the departure it names?
+ *
+ * The model already ignores implausible offsets; a sighting the model threw
+ * out must not still be drawn on screen as a bus, or the app ends up claiming
+ * the 14:30 is sitting at a stop at 17:37. Same rule, one place.
+ */
+export function isPlausibleReport(tripTime, minutesOfDay) {
+  const scheduled = toMinutes(tripTime);
+  const observed = Number(minutesOfDay);
+  if (scheduled === null || !isFinite(observed)) return false;
+  let offset = observed - scheduled;
+  if (offset < -720) offset += 1440;
+  return offset >= MIN_VALID_OFFSET && offset <= MAX_VALID_OFFSET;
+}
 
 export function toMinutes(timeStr) {
   if (typeof timeStr !== "string") return null;
@@ -125,10 +141,10 @@ export function buildEtaModel(reports) {
     if (scheduled === null || !isFinite(observed)) continue;
     if (!isFinite(stopIndex) || stopIndex < 0) continue;
 
-    let offset = observed - scheduled;
     // A report just after midnight for a late-evening departure wraps around.
+    let offset = observed - scheduled;
     if (offset < -720) offset += 1440;
-    if (offset < MIN_VALID_OFFSET || offset > MAX_VALID_OFFSET) continue;
+    if (!isPlausibleReport(r.tripTime, observed)) continue;
 
     const weight = recencyWeight(r.ageDays);
     if (weight <= 0.01) continue;

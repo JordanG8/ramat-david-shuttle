@@ -1,6 +1,7 @@
 import { sql } from "@vercel/postgres";
 import {
   buildEtaModel,
+  isPlausibleReport,
   RETENTION_DAYS,
   LIVE_WINDOW_MINUTES,
 } from "../src/lib/liveEta.js";
@@ -106,6 +107,9 @@ async function handleGet(req, res) {
 
   const live = samples
     .filter((s) => s.ageMinutes <= LIVE_WINDOW_MINUTES)
+    // A sighting the model rejected as a mis-tap must not be drawn as a bus
+    // either — otherwise the app shows the 14:30 standing at a stop at 17:37.
+    .filter((s) => isPlausibleReport(s.tripTime, s.minutesOfDay))
     .map((s) => ({
       routeKey: s.routeKey,
       tripTime: s.tripTime,
